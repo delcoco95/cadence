@@ -1,9 +1,51 @@
 export type Cefr = 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
 export const CEFR_LEVELS: Cefr[] = ['A2', 'B1', 'B2', 'C1', 'C2'];
 
+/** Bandes intermédiaires pour une progression plus fine que les 5 niveaux du CECRL. */
+export type CefrBand = 'A2' | 'A2+' | 'B1' | 'B1+' | 'B2' | 'B2+' | 'C1' | 'C2';
+export const CEFR_BANDS: CefrBand[] = ['A2', 'A2+', 'B1', 'B1+', 'B2', 'B2+', 'C1', 'C2'];
+
 export type Skill = 'grammar' | 'vocabulary' | 'listening' | 'reading' | 'writing' | 'speaking';
 
+/** Catégories d'erreurs, détectées automatiquement ou prévues par le contenu. */
+export type ErrorTag =
+  | 'third_person_s'
+  | 'missing_auxiliary'
+  | 'auxiliary_with_inflected_verb'
+  | 'wrong_auxiliary'
+  | 'wrong_tense'
+  | 'irregular_form'
+  | 'regularized_irregular'
+  | 'article_missing'
+  | 'article_wrong'
+  | 'wrong_preposition'
+  | 'word_order'
+  | 'plural_form'
+  | 'countable_uncountable'
+  | 'modal_to'
+  | 'wrong_pronoun'
+  | 'spelling'
+  | 'vocabulary_missing'
+  | 'listening_misunderstanding'
+  | 'pronunciation_intelligibility'
+  | 'insufficient_answer'
+  | 'wrong_choice';
+
+/** Piège prévu par l'auteur : si la réponse normalisée contient `match`, on étiquette l'erreur. */
+export interface ErrorPattern {
+  match: string;
+  tag: ErrorTag;
+  feedback?: string;
+}
+
 interface ExerciseBase {
+  /** Niveau de preuve ; déduit du type si absent (voir core/evidence.ts) */
+  evidence?: 'recognition' | 'recall' | 'production' | 'free' | 'transfer';
+  /** practice (leçons, révisions) ou assessment (jamais vu en pratique : checkpoints, examens) */
+  role?: 'practice' | 'assessment';
+  /** Variantes équivalentes d'un même item (repêchage sans répétition à l'identique) */
+  familyId?: string;
+  errorPatterns?: ErrorPattern[];
   id: string;
   cefr: Cefr;
   skill: Skill;
@@ -156,4 +198,6 @@ export interface Unit {
   title: string;
   description: string;
   lessonIds: string[];
+  /** Objectifs « Je peux… » (Can Do) */
+  canDo?: string[];
 }

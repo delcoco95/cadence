@@ -8,6 +8,7 @@ import { Profile } from './features/profile/Profile';
 import { LessonPlayer } from './features/lesson/LessonPlayer';
 import { FocusScreen } from './features/focus/FocusScreen';
 import { PracticePlayer } from './features/practice/PracticePlayer';
+import { ProgressScreen } from './features/progress/ProgressScreen';
 import { HomeIcon, PathIcon, ProfileIcon } from './ui/Icons';
 
 function TabBar() {
@@ -64,6 +65,7 @@ export function App() {
         <Route path="/profile" element={<WithTabs><Profile /></WithTabs>} />
         <Route path="/lesson/:lessonId" element={<LessonRoute />} />
         <Route path="/focus" element={<FocusScreen />} />
+        <Route path="/progress" element={<ProgressScreen />} />
         <Route path="/practice/:focus" element={<PracticeRoute />} />
         <Route path="*" element={<WithTabs><Home /></WithTabs>} />
       </Routes>

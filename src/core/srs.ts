@@ -68,10 +68,11 @@ export function newCard(type: SrsItemType, itemId: string, now = new Date()): Sr
 }
 
 /** La note FSRS est déduite de la réponse, jamais demandée à l'utilisateur. */
-export function ratingFor(verdict: Verdict, durationMs: number, reps: number): Grade {
+export function ratingFor(verdict: Verdict, durationMs: number, reps: number, confidence?: 1 | 2 | 3 | 4): Grade {
   if (verdict === 'wrong') return Rating.Again;
-  if (verdict === 'typo' || durationMs > 25_000) return Rating.Hard;
-  if (durationMs < 5_000 && reps >= 2) return Rating.Easy;
+  // Juste mais deviné ou incertain : l'élément doit revenir vite.
+  if (verdict === 'typo' || durationMs > 25_000 || confidence === 1 || confidence === 2) return Rating.Hard;
+  if (reps >= 2 && (durationMs < 5_000 || confidence === 4) && confidence !== 3) return Rating.Easy;
   return Rating.Good;
 }
 
@@ -84,6 +85,12 @@ export function review(card: SrsCard, grade: Grade, now = new Date()): SrsCard {
 export function reviewPriority(card: SrsCard, now: number): number {
   const overdueDays = (now - card.due) / 86_400_000;
   return overdueDays + 1 / Math.max(0.5, card.stability);
+}
+
+/** Rétention : probabilité de se souvenir de l'élément maintenant (courbe d'oubli FSRS). */
+export function retrievability(card: SrsCard, now = Date.now()): number {
+  if (card.state === State.New) return 0;
+  return scheduler.get_retrievability(toFsrs(card), new Date(now), false);
 }
 
 /** Un élément est « appris » quand il est en révision avec une stabilité d'au moins une semaine. */

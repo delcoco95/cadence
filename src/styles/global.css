@@ -309,3 +309,13 @@ code, .kbd { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 
   text-decoration: none; color: inherit;
 }
 .module b { font-size: 15px; }
+
+.confidence { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.confidence .option { text-align: center; padding: 10px 6px; min-height: 44px; font-size: 15px; font-weight: 600; }
+.dot.consolidate { background: var(--amber); color: #fff; }
+
+.evidence-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.evidence { display: flex; flex-direction: column; gap: 2px; padding: 8px 4px; border-radius: 10px; background: var(--surface-2); text-align: center; }
+.evidence span { font-size: 10px; color: var(--muted); line-height: 1.15; }
+.evidence b { font-size: 14px; }
+.evidence.empty b { color: var(--muted); font-weight: 500; }

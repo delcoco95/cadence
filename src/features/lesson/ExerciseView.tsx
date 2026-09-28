@@ -17,6 +17,8 @@ export interface ExerciseProps {
   lang: string;
   /** « Je ne peux pas parler maintenant » */
   onSkipSpeaking: () => void;
+  /** Graine de mélange des options (change à chaque repêchage) */
+  shuffleSeed?: string;
 }
 type Props = ExerciseProps;
 
@@ -35,9 +37,9 @@ export function ExerciseView(props: Props) {
   );
 }
 
-function Mcq({ exercise, locked, revealIndex, onChange, say }: Props & { exercise: McqExercise | ListenMcqExercise }) {
+function Mcq({ exercise, locked, revealIndex, onChange, say, shuffleSeed }: Props & { exercise: McqExercise | ListenMcqExercise }) {
   const [selected, setSelected] = useState<number | null>(null);
-  const order = useMemo(() => seededShuffle(exercise.options.map((_, i) => i), exercise.id), [exercise]);
+  const order = useMemo(() => seededShuffle(exercise.options.map((_, i) => i), shuffleSeed ?? exercise.id), [exercise, shuffleSeed]);
   return (
     <>
       {exercise.type === 'listen_mcq' && <AudioPrompt text={exercise.audio} say={say} />}
@@ -137,10 +139,10 @@ function TextAnswer({ exercise, locked, onChange, onSubmit, say }: Props) {
   );
 }
 
-function WordBank({ exercise, locked, onChange }: Props & { exercise: WordBankExercise }) {
+function WordBank({ exercise, locked, onChange, shuffleSeed }: Props & { exercise: WordBankExercise }) {
   const bank = useMemo(
-    () => seededShuffle([...exercise.tokens, ...(exercise.distractors ?? [])], exercise.id),
-    [exercise],
+    () => seededShuffle([...exercise.tokens, ...(exercise.distractors ?? [])], shuffleSeed ?? exercise.id),
+    [exercise, shuffleSeed],
   );
   const [picked, setPicked] = useState<number[]>([]);
   const emit = (next: number[]) => {

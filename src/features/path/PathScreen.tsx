@@ -28,7 +28,7 @@ export function PathScreen() {
           </Link>
           <Link className="module" to="/practice/vocab">
             <b>📚 Vocabulaire</b>
-            <span className="small muted">{stats?.wordsStarted ?? 0} / {VOCAB_A2.length} mots</span>
+            <span className="small muted">{(stats?.wordsActive ?? 0) + (stats?.wordsPassive ?? 0)} / {VOCAB_A2.length} mots vus</span>
           </Link>
           <Link className="module" to="/practice/irregular">
             <b>🔤 Verbes irréguliers</b>
@@ -56,15 +56,20 @@ export function PathScreen() {
                   const lesson = getLesson(id)!;
                   const p = progress?.get(id);
                   const done = p?.status === 'completed';
+                  const consolidate = done && p!.bestScore < 0.7;
                   const isNext = id === nextId && !done;
                   return (
                     <Link key={id} to={`/lesson/${id}`} className="lesson-row">
-                      <span className={`dot${done ? ' done' : isNext ? ' next' : ''}`}>{done ? '✓' : i + 1}</span>
+                      <span className={`dot${consolidate ? ' consolidate' : done ? ' done' : isNext ? ' next' : ''}`}>{consolidate ? '!' : done ? '✓' : i + 1}</span>
                       <div className="grow">
                         <p style={{ fontWeight: 600 }}>{lesson.title}</p>
                         <p className="small muted">{lesson.subtitle}</p>
                       </div>
-                      {done && <span className="small muted">{Math.round(p!.bestScore * 100)} %</span>}
+                      {done && (
+                        <span className="small muted" style={{ textAlign: 'right' }}>
+                          {consolidate ? 'à consolider' : 'vue'}<br />{Math.round(p!.bestScore * 100)} %
+                        </span>
+                      )}
                     </Link>
                   );
                 })}

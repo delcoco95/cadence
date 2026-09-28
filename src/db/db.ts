@@ -1,7 +1,11 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type { Cefr, Skill } from '../content/types';
 import type { SrsCard } from '../core/srs';
-import type { KcState } from '../core/mastery';
+import type { KcMastery } from '../core/mastery';
+import type { ErrorEvent } from '../core/errors';
+import type { Evidence } from '../core/evidence';
+import type { ErrorTag } from '../content/types';
+import { replayAttempts } from './replay';
 
 export type ThemePref = 'system' | 'light' | 'dark';
 export type Accent = 'en-US' | 'en-GB' | 'en-AU';
@@ -24,6 +28,8 @@ export interface Settings {
   speakingEnabled: boolean;
   /** Nouveaux mots présentés par jour */
   newWordsPerDay: number;
+  /** Demander « Sûr de toi ? » après certaines bonnes réponses */
+  askConfidence: boolean;
   createdAt: number;
 }
 
@@ -48,7 +54,11 @@ export interface Attempt {
   response: string;
   kcIds: string[];
   skill?: Skill;
-  context: 'lesson' | 'review' | 'drill' | 'new' | 'placement';
+  evidence?: Evidence;
+  /** 1 deviné · 2 pas sûr · 3 plutôt sûr · 4 certain */
+  confidence?: 1 | 2 | 3 | 4;
+  errorTags?: ErrorTag[];
+  context: 'lesson' | 'review' | 'drill' | 'new' | 'recap' | 'retry' | 'placement';
 }
 
 export interface LessonProgress {
@@ -65,7 +75,8 @@ export const db = new Dexie('cadence') as Dexie & {
   attempts: EntityTable<Attempt, 'id'>;
   lessonProgress: EntityTable<LessonProgress, 'lessonId'>;
   srsCards: EntityTable<SrsCard, 'id'>;
-  kcMastery: EntityTable<KcState, 'kcId'>;
+  kcEvidence: EntityTable<KcMastery, 'kcId'>;
+  errorEvents: EntityTable<ErrorEvent, 'id'>;
 };
 
 db.version(1).stores({
@@ -81,6 +92,21 @@ db.version(2).stores({
   kcMastery: 'kcId',
 });
 
+// v3 : maîtrise par niveau de preuve + journal des erreurs, recalculés depuis l'historique des réponses
+db.version(3)
+  .stores({
+    kcMastery: null,
+    kcEvidence: 'kcId',
+    errorEvents: '++id, tag, kcId, at',
+  })
+  .upgrade(async (tx) => {
+    // Pas d'attente hors IndexedDB ici : la transaction se fermerait trop tôt.
+    const attempts = (await tx.table('attempts').toArray()) as Attempt[];
+    const { masteries, errors } = replayAttempts(attempts);
+    await tx.table('kcEvidence').bulkPut(masteries);
+    await tx.table('errorEvents').bulkAdd(errors);
+  });
+
 export const DEFAULT_SETTINGS: Settings = {
   id: 'me',
   onboarded: false,
@@ -94,6 +120,7 @@ export const DEFAULT_SETTINGS: Settings = {
   speechRate: 0.9,
   speakingEnabled: true,
   newWordsPerDay: 8,
+  askConfidence: true,
   createdAt: Date.now(),
 };
 

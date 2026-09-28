@@ -1,8 +1,11 @@
 import { useCallback, useRef, useState, type ReactNode } from 'react';
-import type { Exercise } from '../../content/types';
+import type { ErrorTag, Exercise } from '../../content/types';
 import { gradeExercise, xpFor, type ExerciseResponse, type ExerciseResult } from '../../core/exercise';
 import type { IntroCard, SessionItem } from '../../core/session';
-import { recordResult } from '../../db/learning';
+import { detectErrors, ERROR_LABELS } from '../../core/errors';
+import { evidenceOf } from '../../core/evidence';
+import { recordResult, retryItem, type Confidence } from '../../db/learning';
+import { IRREGULAR_FORMS } from '../../db/meta';
 import type { Attempt } from '../../db/db';
 import { useSettings } from '../../db/hooks';
 import { speak } from '../../speech/tts';
@@ -32,13 +35,38 @@ interface Props {
   onActivity?: () => void;
 }
 
+type ExerciseItem = SessionItem & { kind: 'exercise' };
+
+interface Pending {
+  item: ExerciseItem;
+  result: ExerciseResult;
+  response: ExerciseResponse;
+  durationMs: number;
+  firstTry: boolean;
+  errorTags: ErrorTag[];
+  askConfidence: boolean;
+}
+
+/** Un repêchage revient au moins 3 items plus tard : on doit retrouver la règle, pas la réponse. */
+const RETRY_GAP = 3;
+
+const SOURCE_CHIPS: Record<string, { text: string; cls: string } | undefined> = {
+  review: { text: '↻ Révision', cls: 'chip' },
+  drill: { text: '🎯 Point faible', cls: 'chip amber' },
+  recap: { text: '🧠 Récap du jour · sans aide', cls: 'chip accent' },
+  retry: { text: '↺ Nouvelle tentative', cls: 'chip amber' },
+};
+
 export function ExerciseRunner({ items, context, lessonId, onExit, onFinish, banner, onActivity }: Props) {
   const settings = useSettings();
   const [queue, setQueue] = useState<SessionItem[]>(items);
   const [pos, setPos] = useState(0);
   const [response, setResponse] = useState<ExerciseResponse | null>(null);
-  const [result, setResult] = useState<ExerciseResult | null>(null);
+  const [pending, setPending] = useState<Pending | null>(null);
   const firstTry = useRef(new Map<string, number>());
+  const usedIds = useRef(new Set<string>());
+  const retries = useRef(new Map<string, number>());
+  const correctCount = useRef(0);
   const xp = useRef(0);
   const startedAt = useRef(Date.now());
 
@@ -52,12 +80,8 @@ export function ExerciseRunner({ items, context, lessonId, onExit, onFinish, ban
     [accent, rate, onActivity],
   );
 
-  const exerciseCount = new Set(items.filter((i) => i.kind === 'exercise').map((i) => (i.kind === 'exercise' ? i.exercise.id : ''))).size;
-  const introCount = items.filter((i) => i.kind === 'intro').length;
-  const doneCount = firstTry.current.size + queue.slice(0, pos).filter((i) => i.kind === 'intro').length;
-  const progress = doneCount / Math.max(1, exerciseCount + introCount);
-  const retries = queue.length - items.length;
   const current = queue[pos];
+  const progress = pos / Math.max(1, queue.length);
 
   function finish() {
     const scores = [...firstTry.current.values()];
@@ -69,36 +93,63 @@ export function ExerciseRunner({ items, context, lessonId, onExit, onFinish, ban
     });
   }
 
-  function advance() {
-    setResult(null);
+  async function commit(p: Pending, confidence?: Confidence) {
+    await recordResult({
+      exercise: p.item.exercise,
+      result: p.result,
+      durationMs: p.durationMs,
+      context: p.item.source === 'lesson' ? context : p.item.source,
+      lessonId,
+      cardId: p.item.source === 'retry' ? undefined : p.item.cardId,
+      firstTry: p.firstTry,
+      response: JSON.stringify(p.response),
+      errorTags: p.errorTags,
+      confidence,
+    });
+  }
+
+  function advance(confidence?: Confidence) {
+    if (pending) void commit(pending, confidence);
+    setPending(null);
     setResponse(null);
     startedAt.current = Date.now();
     if (pos + 1 < queue.length) setPos(pos + 1);
     else finish();
   }
 
-  async function check() {
-    if (!current || current.kind !== 'exercise' || !response) return;
+  function check() {
+    if (!current || current.kind !== 'exercise' || !response || pending) return;
     const ex = current.exercise;
-    const r = gradeExercise(ex, response);
-    setResult(r);
-    const isFirst = !firstTry.current.has(ex.id);
+    const result = gradeExercise(ex, response);
+    const errorTags = detectErrors(ex, response, result, { irregulars: IRREGULAR_FORMS });
+    const isFirst = !firstTry.current.has(ex.id) && current.source !== 'retry';
+    usedIds.current.add(ex.id);
     if (isFirst) {
-      firstTry.current.set(ex.id, r.score);
-      xp.current += xpFor(ex, r.score);
-      // Erreur au premier essai : l'exercice revient une fois plus tard dans la séance.
-      if (r.verdict === 'wrong') setQueue((q) => [...q, { ...current }]);
+      firstTry.current.set(ex.id, result.score);
+      xp.current += xpFor(ex, result.score);
     }
-    await recordResult({
-      exercise: ex,
-      result: r,
-      durationMs: Date.now() - startedAt.current,
-      context: current.source === 'lesson' ? context : current.source,
-      lessonId,
-      cardId: current.cardId,
-      firstTry: isFirst,
-      response: JSON.stringify(response),
-    });
+    if (result.verdict === 'wrong') {
+      // Repêchage varié, inséré plus loin dans la séance (au plus 2 par item).
+      const key = current.source === 'retry' ? ex.kcIds[0] ?? ex.id : ex.id;
+      const n = (retries.current.get(key) ?? 0) + 1;
+      if (n <= 2) {
+        retries.current.set(key, n);
+        // Exclure aussi ce qui reste à venir : sinon le repêchage ferait doublon avec un item de la leçon.
+        const upcoming = queue.slice(pos + 1).flatMap((i) => (i.kind === 'exercise' ? [i.exercise.id] : []));
+        const retry = retryItem(ex, current, new Set([...usedIds.current, ...upcoming]), n);
+        setQueue((q) => {
+          const at = Math.min(q.length, pos + 1 + RETRY_GAP);
+          return [...q.slice(0, at), retry, ...q.slice(at)];
+        });
+      }
+    }
+    // « Sûr de toi ? » : environ une bonne réponse sur 4, en rappel ou production.
+    let ask = false;
+    if (result.verdict === 'correct' && settings?.askConfidence !== false && evidenceOf(ex) !== 'recognition') {
+      correctCount.current++;
+      ask = correctCount.current % 4 === 1;
+    }
+    setPending({ item: current, result, response, durationMs: Date.now() - startedAt.current, firstTry: isFirst, errorTags, askConfidence: ask });
   }
 
   /** « Je ne peux pas parler » : on retire tous les exercices oraux restants de la séance. */
@@ -110,42 +161,47 @@ export function ExerciseRunner({ items, context, lessonId, onExit, onFinish, ban
     if (pos >= next.length) finish();
   }
 
+  function exit() {
+    if (pending) void commit(pending);
+    onExit();
+  }
+
   if (!current) return null;
+  const chip = current.kind === 'exercise' ? SOURCE_CHIPS[current.source] : undefined;
 
   return (
-    <div className="screen full" style={{ paddingBottom: result ? 300 : undefined }}>
+    <div className="screen full" style={{ paddingBottom: pending ? 320 : undefined }}>
       <div className="lesson-top">
-        <button className="icon-btn" aria-label="Quitter" onClick={onExit}>
+        <button className="icon-btn" aria-label="Quitter" onClick={exit}>
           <CloseIcon />
         </button>
         <ProgressBar value={progress} />
-        {retries > 0 && <span className="chip amber">+{retries}</span>}
       </div>
       {banner}
 
       {current.kind === 'intro' ? (
-        <IntroView key={`intro-${pos}`} intro={current.intro} say={say} onNext={advance} />
+        <IntroView key={`intro-${pos}`} intro={current.intro} say={say} onNext={() => advance()} />
       ) : (
         <>
-          {current.source === 'review' && <span className="chip" style={{ alignSelf: 'flex-start' }}>↻ Révision</span>}
-          {current.source === 'drill' && <span className="chip amber" style={{ alignSelf: 'flex-start' }}>🎯 Point faible</span>}
+          {chip && <span className={chip.cls} style={{ alignSelf: 'flex-start' }}>{chip.text}</span>}
           <ExerciseView
             key={`${current.exercise.id}-${pos}`}
             exercise={current.exercise}
-            locked={!!result}
+            locked={!!pending}
             revealIndex={current.exercise.type === 'mcq' || current.exercise.type === 'listen_mcq' ? current.exercise.answer : undefined}
             onChange={setResponse}
-            onSubmit={() => void check()}
+            onSubmit={check}
             say={say}
             lang={accent}
             onSkipSpeaking={skipSpeaking}
+            shuffleSeed={current.shuffleSeed}
           />
-          {!result && (
+          {!pending && (
             <div className="bottom-action">
-              <button className="btn" disabled={!response} onClick={() => void check()}>Vérifier</button>
+              <button className="btn" disabled={!response} onClick={check}>Vérifier</button>
             </div>
           )}
-          {result && <Feedback exercise={current.exercise} result={result} onNext={advance} onSpeak={say} />}
+          {pending && <Feedback pending={pending} onNext={advance} onSpeak={say} />}
         </>
       )}
     </div>
@@ -174,9 +230,16 @@ function IntroView({ intro, say, onNext }: { intro: IntroCard; say: (t: string) 
   );
 }
 
-function Feedback({ exercise, result, onNext, onSpeak }: {
-  exercise: Exercise; result: ExerciseResult; onNext: () => void; onSpeak: (t: string) => void;
-}) {
+const CONFIDENCE: { value: Confidence; label: string }[] = [
+  { value: 1, label: 'J’ai deviné' },
+  { value: 2, label: 'Pas sûr' },
+  { value: 3, label: 'Plutôt sûr' },
+  { value: 4, label: 'Certain' },
+];
+
+function Feedback({ pending, onNext, onSpeak }: { pending: Pending; onNext: (c?: Confidence) => void; onSpeak: (t: string) => void }) {
+  const { result, errorTags } = pending;
+  const exercise: Exercise = pending.item.exercise;
   const isSpeak = exercise.type === 'speak';
   const title =
     result.verdict === 'correct'
@@ -186,6 +249,7 @@ function Feedback({ exercise, result, onNext, onSpeak }: {
         : isSpeak ? 'Pas encore compréhensible' : 'Pas tout à fait';
   const showExpected = !isSpeak && (result.verdict !== 'correct' || exercise.type === 'translate');
   const missing = new Set(result.speech?.missing ?? []);
+  const shownErrors = errorTags.filter((t) => t !== 'wrong_choice' && t !== 'spelling');
 
   return (
     <div className={`feedback ${result.verdict}`}>
@@ -197,6 +261,9 @@ function Feedback({ exercise, result, onNext, onSpeak }: {
           )}
         </div>
         {showExpected && <p><span className="muted small">Réponse : </span><b>{result.expected}</b></p>}
+        {shownErrors.length > 0 && (
+          <p className="small"><span className="muted">Erreur repérée : </span>{shownErrors.map((t) => ERROR_LABELS[t]).join(' · ')}</p>
+        )}
         {result.speech && (
           <div className="stack" style={{ gap: 6 }}>
             <p className="small"><span className="muted">Entendu : </span>« {result.speech.heard || '…'} »</p>
@@ -217,7 +284,19 @@ function Feedback({ exercise, result, onNext, onSpeak }: {
           </div>
         )}
         <p className="small">{exercise.explanation}</p>
-        <button className={`btn ${result.verdict === 'wrong' ? 'danger' : 'success'}`} onClick={onNext} autoFocus>Continuer</button>
+        {result.verdict === 'wrong' && <p className="small muted">Cette notion reviendra un peu plus loin, sous une autre forme.</p>}
+        {pending.askConfidence ? (
+          <div className="stack" style={{ gap: 8 }}>
+            <p className="small" style={{ fontWeight: 600 }}>Sûr de toi ?</p>
+            <div className="confidence">
+              {CONFIDENCE.map((c) => (
+                <button key={c.value} className="option" onClick={() => onNext(c.value)}>{c.label}</button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <button className={`btn ${result.verdict === 'wrong' ? 'danger' : 'success'}`} onClick={() => onNext()} autoFocus>Continuer</button>
+        )}
       </div>
     </div>
   );

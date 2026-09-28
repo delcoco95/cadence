@@ -3,6 +3,27 @@ import { LESSONS, UNITS, PATH, getLesson, VOCAB_A2, IRREGULAR_VERBS } from './in
 import { KC_LABELS } from './kcs';
 import { gradeExercise } from '../core/exercise';
 import { vocabExercise, irregularExercise } from '../core/generators';
+import { KCS } from './kcs';
+import { validateContent } from './validate';
+
+describe('content validator', () => {
+  it('reports no blocking error', () => {
+    const report = validateContent({ lessons: LESSONS, units: UNITS, kcs: KCS, vocab: VOCAB_A2, irregulars: IRREGULAR_VERBS, path: PATH });
+    expect(report.issues.filter((i) => i.level === 'error')).toEqual([]);
+  });
+
+  it('detects broken content', () => {
+    const broken = structuredClone(LESSONS.slice(0, 1));
+    const e = broken[0].exercises[0];
+    e.kcIds = ['missing.kc'];
+    if (e.type === 'mcq') e.options = ['a', 'a'];
+    const kcs = [...KCS, { id: 'x', label: 'x', domain: 'grammar' as const, band: 'A2' as const, prerequisites: ['y'] }, { id: 'y', label: 'y', domain: 'grammar' as const, band: 'A2' as const, prerequisites: ['x'] }];
+    const report = validateContent({ lessons: broken, units: [], kcs, vocab: [], irregulars: [], path: broken.map((l) => l.id) });
+    const messages = report.issues.filter((i) => i.level === 'error').map((i) => i.message).join(' | ');
+    expect(messages).toContain('notion inexistante');
+    expect(messages).toContain('cycle de prérequis');
+  });
+});
 
 describe('content integrity', () => {
   const exercises = LESSONS.flatMap((l) => l.exercises);

@@ -1,10 +1,10 @@
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getLesson } from '../../content';
 import type { ExplanationSection } from '../../content/types';
 import type { SessionItem } from '../../core/session';
 import { completeLesson } from '../../db/progress';
-import { scheduleLessonKcs } from '../../db/learning';
+import { lessonRecap, scheduleLessonKcs } from '../../db/learning';
 import { useSettings } from '../../db/hooks';
 import { speak } from '../../speech/tts';
 import { SpeakerIcon } from '../../ui/Icons';
@@ -23,13 +23,19 @@ export function LessonPlayer() {
   const [phase, setPhase] = useState<'intro' | 'exercise' | 'done'>('intro');
   const [summary, setSummary] = useState<RunSummary | null>(null);
 
-  const items = useMemo<SessionItem[]>(
+  const lessonItems = useMemo<SessionItem[]>(
     () =>
       (lesson?.exercises ?? [])
         .filter((e) => settings?.speakingEnabled !== false || e.type !== 'speak')
         .map((exercise) => ({ kind: 'exercise', exercise, source: 'lesson' })),
     [lesson, settings?.speakingEnabled],
   );
+  // Fin de leçon : quelques notions vues avant, sans aide (pratique mélangée + récupération espacée).
+  const [recap, setRecap] = useState<SessionItem[]>([]);
+  useEffect(() => {
+    if (lesson) void lessonRecap(lesson).then(setRecap);
+  }, [lesson]);
+  const items = useMemo(() => [...lessonItems, ...recap], [lessonItems, recap]);
 
   if (!lesson) {
     return (
@@ -41,9 +47,12 @@ export function LessonPlayer() {
   }
 
   async function onFinish(s: RunSummary) {
+    // Le score de la leçon ne porte que sur ses propres exercices (pas sur le récap).
+    const own = lesson!.exercises.map((e) => s.firstTry.get(e.id)).filter((v): v is number => v !== undefined);
+    const score = own.length ? own.reduce((a, b) => a + b, 0) / own.length : s.score;
     await scheduleLessonKcs(lesson!, s.firstTry);
-    await completeLesson(lesson!.id, s.score, s.xp);
-    setSummary(s);
+    await completeLesson(lesson!.id, score, s.xp);
+    setSummary({ ...s, score });
     setPhase('done');
   }
 

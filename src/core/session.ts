@@ -1,8 +1,9 @@
 import type { Exercise } from '../content/types';
 import { estSeconds, seededShuffle } from './exercise';
 import { reviewPriority, type SrsCard } from './srs';
+import { interleave } from './retry';
 
-export type SessionSource = 'lesson' | 'review' | 'drill' | 'new';
+export type SessionSource = 'lesson' | 'review' | 'drill' | 'new' | 'recap' | 'retry';
 
 /** Fiche de présentation d'un nouvel élément (mot, verbe irrégulier), non notée. */
 export interface IntroCard {
@@ -15,7 +16,7 @@ export interface IntroCard {
 }
 
 export type SessionItem =
-  | { kind: 'exercise'; exercise: Exercise; source: SessionSource; cardId?: string }
+  | { kind: 'exercise'; exercise: Exercise; source: SessionSource; cardId?: string; shuffleSeed?: string }
   | { kind: 'intro'; intro: IntroCard; cardId: string };
 
 export interface NewItem {
@@ -38,6 +39,8 @@ export interface SessionInput {
   /** Éléments jamais vus, dans l'ordre d'apprentissage souhaité */
   newItems: NewItem[];
   includeSpeaking: boolean;
+  /** Récap de fin de séance : rappel sans aide de ce qui a été vu aujourd'hui et hier */
+  recap?: Exercise[];
   /** Part du budget pour les révisions et le travail ciblé (défaut 0,5 et 0,25) */
   shares?: { review: number; drill: number };
 }
@@ -72,18 +75,20 @@ export function buildSession(input: SessionInput): SessionItem[] {
 
   // 2. Travail ciblé : tour à tour sur chaque notion faible
   const drills: SessionItem[] = [];
-  const drillLimit = spent + B * shares.drill;
   const pools = input.weakKcs.map((kc) => input.exercisesForKc(kc).filter(usable));
-  while (spent < drillLimit && pools.some((p) => p.length)) {
-    for (const pool of pools) {
-      if (spent >= drillLimit) break;
-      const ex = pool.shift();
-      if (!ex || used.has(ex.id)) continue;
-      used.add(ex.id);
-      drills.push({ kind: 'exercise', exercise: ex, source: 'drill' });
-      spent += estSeconds(ex);
+  const drillUntil = (limit: number) => {
+    while (spent < limit && pools.some((p) => p.length)) {
+      for (const pool of pools) {
+        if (spent >= limit) break;
+        const ex = pool.shift();
+        if (!ex || used.has(ex.id)) continue;
+        used.add(ex.id);
+        drills.push({ kind: 'exercise', exercise: ex, source: 'drill' });
+        spent += estSeconds(ex);
+      }
     }
-  }
+  };
+  drillUntil(spent + B * shares.drill);
 
   // 3. Nouveaux éléments : présentation puis premier exercice
   const fresh: SessionItem[][] = [];
@@ -97,9 +102,18 @@ export function buildSession(input: SessionInput): SessionItem[] {
     spent += INTRO_SECONDS + estSeconds(item.exercise);
   }
 
-  // Entrelacement : révisions et faiblesses mélangées, nouveaux mots répartis régulièrement.
-  const mixed = seededShuffle([...reviews, ...drills], input.seed);
-  if (!fresh.length) return mixed;
+  // Temps restant (peu de révisions, plus de nouveautés aujourd'hui) : on le consacre au travail ciblé.
+  drillUntil(B);
+
+  // Entrelacement : révisions et faiblesses mélangées (jamais plus de 2 fois la même notion d'affilée),
+  // nouveaux éléments répartis régulièrement, récap à la fin.
+  const kcKey = (it: SessionItem) => (it.kind === 'exercise' ? it.exercise.kcIds[0] ?? it.exercise.id : it.cardId);
+  const mixed = interleave(seededShuffle([...reviews, ...drills], input.seed), kcKey);
+  const recap: SessionItem[] = interleave(
+    (input.recap ?? []).filter(usable).filter((e) => !used.has(e.id)).map((exercise) => ({ kind: 'exercise' as const, exercise, source: 'recap' as const })),
+    kcKey,
+  );
+  if (!fresh.length) return [...mixed, ...recap];
   const out: SessionItem[] = [];
   const step = Math.max(1, Math.ceil(mixed.length / fresh.length));
   let f = 0;
@@ -108,7 +122,7 @@ export function buildSession(input: SessionInput): SessionItem[] {
     out.push(item);
   });
   while (f < fresh.length) out.push(...fresh[f++]);
-  return out;
+  return [...out, ...recap];
 }
 
 export function sessionSeconds(items: SessionItem[]): number {

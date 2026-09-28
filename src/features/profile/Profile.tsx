@@ -96,6 +96,16 @@ export function Profile() {
           </label>
         </div>
         <div className="setting">
+          <div>
+            <p style={{ fontWeight: 600 }}>« Sûr de toi ? »</p>
+            <p className="small muted">Après certaines bonnes réponses : une réponse devinée revient plus vite</p>
+          </div>
+          <label className="toggle">
+            <input type="checkbox" checked={settings.askConfidence} onChange={(e) => void updateSettings({ askConfidence: e.target.checked })} />
+            <span />
+          </label>
+        </div>
+        <div className="setting">
           <p style={{ fontWeight: 600 }}>Nouveaux mots par jour</p>
           <select className="field" value={settings.newWordsPerDay} onChange={(e) => void updateSettings({ newWordsPerDay: Number(e.target.value) })}>
             {[4, 8, 12, 16, 20].map((n) => <option key={n} value={n}>{n}</option>)}

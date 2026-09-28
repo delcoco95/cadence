@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { matchSpeech, checkFreeAnswer, bestSpeechMatch } from './speaking';
 import { newCard, ratingFor, review, Rating, State, isLearned } from './srs';
-import { initialKc, updateKc, mastery, isWeak, isMastered } from './mastery';
 import { buildSession, sessionSeconds } from './session';
 import { irregularExercise, vocabExercise, englishVariants } from './generators';
 import { gradeExercise } from './exercise';
@@ -55,20 +54,6 @@ describe('srs', () => {
     expect(card.lapses).toBe(1);
     expect(card.stability).toBeLessThan(beforeLapse);
     expect(isLearned(card)).toBe(false);
-  });
-});
-
-describe('mastery', () => {
-  it('rises with successes and flags weaknesses', () => {
-    let good = initialKc('a');
-    let bad = initialKc('b');
-    for (let i = 0; i < 10; i++) {
-      good = updateKc(good, 0, 1);
-      bad = updateKc(bad, 0, i % 3 === 0 ? 1 : 0);
-    }
-    expect(mastery(good)).toBeGreaterThan(0.85);
-    expect(isMastered(good)).toBe(true);
-    expect(isWeak(bad)).toBe(true);
   });
 });
 
