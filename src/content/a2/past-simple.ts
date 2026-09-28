@@ -1,4 +1,5 @@
 import type { Lesson } from '../types';
+import { exercises } from '../builders';
 
 const base = { cefr: 'A2', skill: 'grammar', tense: 'past_simple' } as const;
 
@@ -105,6 +106,15 @@ export const pastSimple1: Lesson = {
       speak: 'Did she like the film?',
       explanation: 'Did + she + like (base). film (UK) / movie (US).',
     },
+    ...exercises('a2-past-1-x', 'A2', { kc: 'tense.past_simple.regular', tense: 'past_simple' })
+      .listen('We visited my grandparents last Sunday.', 'Quand sont-ils allés chez les grands-parents ?', ['Dimanche dernier', 'Samedi dernier', 'Ce week-end'], 0,
+        'last Sunday = dimanche dernier.')
+      .dictation('I called the client yesterday.', 'call → called. yesterday → past simple.')
+      .repeat('I watched a film and then I cooked dinner.', 'Le -ed se prononce /t/ après un son sourd : watched /wɒtʃt/, cooked /kʊkt/.')
+      .say('Tu as fini le rapport ?', ['Did you finish the report'], 'Did + you + finish (base).', { kc: 'tense.past_simple.question' })
+      .answer('What did you do last weekend?', 'Last weekend I visited my parents and on Sunday I watched a football match.',
+        'Raconte au past simple (visited, watched, played…).', { keywords: [['last weekend', 'on saturday', 'on sunday', 'yesterday']], minWords: 8 })
+      .build(),
   ],
 };
 
@@ -217,5 +227,16 @@ export const pastSimple2: Lesson = {
       accepted: ['I knew he was right.', 'I knew that he was right.'], speak: 'I knew he was right.',
       explanation: 'know → knew. « avoir raison » = to be right → he was right.',
     },
+    ...exercises('a2-past-2-x', 'A2', { kc: 'tense.past_simple.irregular', tense: 'past_simple' })
+      .listen('I bought a new phone because my old one broke.', 'Qu’est-il arrivé à l’ancien téléphone ?', ['Il s’est cassé', 'Il a été volé', 'Il était trop lent'], 0,
+        'break → broke → broken. bought = acheté.')
+      .dictation('She went to London and saw the Queen’s palace.', 'go → went, see → saw.', { accepted: ["She went to London and saw the Queen's palace."] })
+      .repeat('I got up early, had breakfast and took the train.', 'get → got, have → had, take → took.')
+      .say('Nous sommes allés au restaurant hier soir.', ['We went to a restaurant last night', 'We went to the restaurant last night', 'Last night we went to a restaurant', 'We went to a restaurant yesterday evening'],
+        'go → went. « hier soir » = last night.')
+      .say('Je n’ai pas vu le message.', ["I didn't see the message", 'I did not see the message'], 'didn’t + see (base, pas saw).')
+      .answer('Tell me about your last holiday. Where did you go? What did you do?', 'Last summer I went to Spain with friends. We swam in the sea and ate a lot of tapas.',
+        'Utilise des irréguliers : went, saw, ate, took, had…', { keywords: [['went', 'go'], ['saw', 'ate', 'took', 'had', 'swam', 'did', 'made', 'bought']], minWords: 10 })
+      .build(),
   ],
 };

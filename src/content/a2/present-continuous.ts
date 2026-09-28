@@ -1,4 +1,5 @@
 import type { Lesson } from '../types';
+import { exercises } from '../builders';
 
 const base = { cefr: 'A2', skill: 'grammar', tense: 'present_continuous' } as const;
 
@@ -117,5 +118,15 @@ export const presentContinuous1: Lesson = {
       speak: 'It’s raining. It often rains in Brest.',
       explanation: 'Maintenant → it’s raining. Habitude → it often rains.',
     },
+    ...exercises('a2-pc-1-x', 'A2', { kc: 'tense.present_continuous.form', tense: 'present_continuous' })
+      .listen('I’m sorry, I can’t talk now. I’m driving.', 'Pourquoi ne peut-il pas parler ?', ['Il conduit', 'Il dort', 'Il est en réunion'], 0,
+        'I’m driving = je suis en train de conduire.')
+      .dictation('They are waiting for the bus.', 'are + waiting. « wait for » = attendre.', { accepted: ['They are waiting for the bus.', "They're waiting for the bus."] })
+      .repeat('What are you doing right now?', 'Question au present continuous : are + you + doing.')
+      .say('Je travaille de chez moi aujourd’hui.', ["I'm working from home today", 'I am working from home today', "Today I'm working from home", 'Today I am working from home'],
+        'Situation temporaire → present continuous.', { kc: 'tense.contrast.simple_vs_continuous' })
+      .answer('Look around you. What are people doing right now?', 'My colleague is typing an email and two people are drinking coffee near the window.',
+        'Décris des actions en cours : is / are + verbe-ing.', { keywords: [['is', 'are', "'s", "'re"]], minWords: 8 })
+      .build(),
   ],
 };

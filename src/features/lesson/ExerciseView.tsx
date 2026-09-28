@@ -1,34 +1,48 @@
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
-import type { Exercise, McqExercise, WordBankExercise } from '../../content/types';
+import type { Exercise, ListenMcqExercise, McqExercise, WordBankExercise } from '../../content/types';
 import { seededShuffle, type ExerciseResponse } from '../../core/exercise';
+import { SpeakInput } from './SpeakInput';
+import { AudioPrompt } from './AudioPrompt';
 
-interface Props {
+export interface ExerciseProps {
   exercise: Exercise;
   locked: boolean;
   /** Bonne option à mettre en évidence après correction (QCM) */
   revealIndex?: number;
   onChange: (r: ExerciseResponse | null) => void;
   onSubmit: () => void;
+  /** Lecture par la synthèse vocale (slow = débit réduit) */
+  say: (text: string, slow?: boolean) => void;
+  /** Langue de reconnaissance vocale, ex. 'en-GB' */
+  lang: string;
+  /** « Je ne peux pas parler maintenant » */
+  onSkipSpeaking: () => void;
 }
+type Props = ExerciseProps;
 
 export function ExerciseView(props: Props) {
   const { exercise: ex } = props;
   return (
     <div className="stack" style={{ '--gap': '20px' } as CSSProperties}>
       <p className="tiny muted">{ex.instruction}</p>
-      {ex.type === 'mcq' && <Mcq {...props} exercise={ex} />}
+      {(ex.type === 'mcq' || ex.type === 'listen_mcq') && <Mcq {...props} exercise={ex} />}
       {ex.type === 'word_bank' && <WordBank {...props} exercise={ex} />}
-      {(ex.type === 'type_answer' || ex.type === 'cloze' || ex.type === 'translate') && <TextAnswer {...props} />}
+      {(ex.type === 'type_answer' || ex.type === 'cloze' || ex.type === 'translate' || ex.type === 'dictation') && (
+        <TextAnswer {...props} />
+      )}
+      {ex.type === 'speak' && <SpeakInput {...props} exercise={ex} />}
     </div>
   );
 }
 
-function Mcq({ exercise, locked, revealIndex, onChange }: Props & { exercise: McqExercise }) {
+function Mcq({ exercise, locked, revealIndex, onChange, say }: Props & { exercise: McqExercise | ListenMcqExercise }) {
   const [selected, setSelected] = useState<number | null>(null);
   const order = useMemo(() => seededShuffle(exercise.options.map((_, i) => i), exercise.id), [exercise]);
   return (
     <>
+      {exercise.type === 'listen_mcq' && <AudioPrompt text={exercise.audio} say={say} />}
       <p className="prompt">{exercise.question}</p>
+      {exercise.type === 'listen_mcq' && locked && <p className="muted">« {exercise.audio} »</p>}
       <div className="stack" style={{ '--gap': '10px' } as CSSProperties}>
         {order.map((i) => {
           let cls = 'option';
@@ -54,7 +68,7 @@ function Mcq({ exercise, locked, revealIndex, onChange }: Props & { exercise: Mc
   );
 }
 
-function TextAnswer({ exercise, locked, onChange, onSubmit }: Props) {
+function TextAnswer({ exercise, locked, onChange, onSubmit, say }: Props) {
   const [value, setValue] = useState('');
   let prompt: ReactNode = null;
   let placeholder = 'Ta réponse';
@@ -74,8 +88,11 @@ function TextAnswer({ exercise, locked, onChange, onSubmit }: Props) {
     placeholder = exercise.direction === 'fr_en' ? 'In English…' : 'En français…';
   } else if (exercise.type === 'type_answer') {
     prompt = <p className="prompt">{exercise.question}</p>;
+  } else if (exercise.type === 'dictation') {
+    prompt = <AudioPrompt text={exercise.audio} say={say} />;
+    placeholder = 'Écris ce que tu entends…';
   }
-  const multiline = exercise.type === 'translate';
+  const multiline = exercise.type === 'translate' || exercise.type === 'dictation';
   const common = {
     className: 'field',
     value,

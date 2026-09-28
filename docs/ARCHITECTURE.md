@@ -126,8 +126,8 @@ Types d'exercices : `mcq`, `type_answer`, `cloze`, `word_bank`, `translate`, `co
 
 | # | Étape | Statut |
 |---|---|---|
-| 1 | Socle PWA, design clair/sombre, onboarding (objectif + blocage), dashboard, temps actif, série, lecteur de leçon (5 types), premières leçons A2, guide Raccourcis, export/import | **en cours** |
-| 2 | FSRS + maîtrise par notion + session quotidienne intelligente + écran Révisions | |
+| 1 | Socle PWA, design clair/sombre, onboarding (objectif + blocage), dashboard, temps actif, série, lecteur de leçon (5 types), premières leçons A2, guide Raccourcis, export/import | ✅ |
+| 2 | FSRS + maîtrise par notion + séance du jour (révisions, points faibles, nouveaux mots/verbes) + 15 leçons A2 (255 exercices) + 224 mots + 90 verbes irréguliers + exercices oraux (répéter, traduire à l’oral, répondre librement) et d’écoute (QCM audio, dictée) | ✅ |
 | 3 | Test de placement + profil de compétences | |
 | 4 | Parcours A2 complet (grammaire, conjugaison, irréguliers, vocabulaire par thèmes) | |
 | 5 | Listening (dictée, cloze audio, accents) + Reading (textes + questions) | |

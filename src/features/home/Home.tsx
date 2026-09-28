@@ -6,6 +6,8 @@ import { greeting } from '../../core/dates';
 import { loadStats } from '../../db/activity';
 import { useSettings, useToday } from '../../db/hooks';
 import { nextLessonId, skillAccuracy } from '../../db/progress';
+import { learningStats } from '../../db/learning';
+import { kcLabel } from '../../content/kcs';
 import { ProgressBar } from '../../ui/ProgressBar';
 import { formatMinutes } from '../../ui/format';
 import { UnlockCard } from '../focus/UnlockCard';
@@ -25,6 +27,7 @@ export function Home() {
   const stats = useLiveQuery(() => loadStats());
   const nextId = useLiveQuery(() => nextLessonId());
   const skills = useLiveQuery(() => skillAccuracy());
+  const learning = useLiveQuery(() => learningStats());
   const lesson = nextId ? getLesson(nextId) : undefined;
 
   const goalSeconds = today?.goalSeconds ?? (settings?.dailyGoalMinutes ?? 5) * 60;
@@ -68,10 +71,43 @@ export function Home() {
         </section>
       )}
 
+      {learning && (
+        <section className="card stack">
+          <div className="row spread">
+            <h3>↻ Séance du jour</h3>
+            {learning.dueCount > 0 && <span className="chip amber">{learning.dueCount} à revoir</span>}
+          </div>
+          <p className="small muted">
+            {learning.dueCount > 0
+              ? 'Révisions espacées, nouveaux mots et verbes, exercices sur tes points faibles.'
+              : 'Aucune révision en attente : la séance te présente de nouveaux mots et verbes.'}
+          </p>
+          <Link className="btn secondary" to="/practice/all">Lancer la séance</Link>
+        </section>
+      )}
+
+      {learning && learning.weak.length > 0 && (
+        <section className="card stack">
+          <h3>🎯 À travailler</h3>
+          {learning.weak.slice(0, 3).map((w) => (
+            <div key={w.kcId} className="stack" style={{ '--gap': '6px' } as CSSProperties}>
+              <div className="row spread small">
+                <span>{kcLabel(w.kcId)}</span>
+                <span className="muted">{Math.round(w.mastery * 100)} %</span>
+              </div>
+              <ProgressBar value={w.mastery} thin />
+            </div>
+          ))}
+          <Link className="btn secondary small" to="/practice/weak">S’entraîner sur mes points faibles</Link>
+        </section>
+      )}
+
       {stats && (
         <section className="stats">
           <div className="stat"><b>🔥 {stats.streak.current}</b><span>jour{stats.streak.current > 1 ? 's' : ''} de série</span></div>
           <div className="stat"><b>🏆 {stats.streak.best}</b><span>meilleure série</span></div>
+          <div className="stat"><b>📚 {learning?.wordsLearned ?? 0}</b><span>mots appris ({learning?.wordsStarted ?? 0} commencés)</span></div>
+          <div className="stat"><b>🔤 {learning?.verbsLearned ?? 0}</b><span>verbes irréguliers appris</span></div>
           <div className="stat"><b>📅 {stats.streak.daysCompleted}</b><span>jours complétés</span></div>
           <div className="stat"><b>⏱️ {formatMinutes(stats.totalSeconds)}</b><span>temps total</span></div>
         </section>

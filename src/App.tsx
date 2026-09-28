@@ -7,6 +7,7 @@ import { PathScreen } from './features/path/PathScreen';
 import { Profile } from './features/profile/Profile';
 import { LessonPlayer } from './features/lesson/LessonPlayer';
 import { FocusScreen } from './features/focus/FocusScreen';
+import { PracticePlayer } from './features/practice/PracticePlayer';
 import { HomeIcon, PathIcon, ProfileIcon } from './ui/Icons';
 
 function TabBar() {
@@ -37,6 +38,12 @@ function LessonRoute() {
   return <LessonPlayer key={lessonId} />;
 }
 
+/** La clé recrée la séance quand on passe d'un type de séance à un autre. */
+function PracticeRoute() {
+  const { focus } = useParams();
+  return <PracticePlayer key={focus} />;
+}
+
 export function App() {
   const settings = useSettings();
 
@@ -57,6 +64,7 @@ export function App() {
         <Route path="/profile" element={<WithTabs><Profile /></WithTabs>} />
         <Route path="/lesson/:lessonId" element={<LessonRoute />} />
         <Route path="/focus" element={<FocusScreen />} />
+        <Route path="/practice/:focus" element={<PracticeRoute />} />
         <Route path="*" element={<WithTabs><Home /></WithTabs>} />
       </Routes>
     </HashRouter>

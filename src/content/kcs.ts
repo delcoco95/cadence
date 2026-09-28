@@ -1,0 +1,42 @@
+import { THEMES } from './vocab/a2';
+
+/** Libellés des notions (knowledge components), affichés dans le profil et les bilans. */
+export const KC_LABELS: Record<string, string> = {
+  'tense.present_simple.form': 'Present simple : forme',
+  'tense.present_simple.third_person_s': 'Present simple : le -s de he/she/it',
+  'tense.present_simple.usage': 'Present simple : habitudes et adverbes de fréquence',
+  'tense.present_simple.negative': 'Present simple : don’t / doesn’t',
+  'tense.present_simple.question': 'Present simple : questions avec do / does',
+  'grammar.auxiliary.do': 'L’auxiliaire do',
+  'tense.present_continuous.form': 'Present continuous : be + -ing',
+  'tense.present_continuous.usage': 'Present continuous : action en cours',
+  'tense.contrast.simple_vs_continuous': 'Present simple ou continuous ?',
+  'tense.past_simple.regular': 'Past simple : verbes réguliers (-ed)',
+  'tense.past_simple.negative': 'Past simple : didn’t + base',
+  'tense.past_simple.question': 'Past simple : questions avec did',
+  'tense.past_simple.irregular': 'Past simple : verbes irréguliers en contexte',
+  'verbs.irregular.top30': 'Verbes irréguliers essentiels',
+  'verbs.irregular': 'Verbes irréguliers',
+  'grammar.articles': 'Articles a / an / the',
+  'grammar.plurals': 'Pluriels (réguliers et irréguliers)',
+  'grammar.pronouns': 'Pronoms sujets et compléments',
+  'grammar.possessives': 'Possessifs (my, mine, ’s)',
+  'grammar.there_is': 'There is / there are',
+  'grammar.prepositions.place': 'Prépositions de lieu',
+  'grammar.prepositions.time': 'Prépositions de temps (in / on / at)',
+  'grammar.questions.wh': 'Questions avec what, where, how…',
+  'grammar.questions.subject': 'Questions sur le sujet (Who called?)',
+  'tense.future.going_to': 'Futur : be going to',
+  'tense.future.will': 'Futur : will',
+  'grammar.comparatives': 'Comparatifs',
+  'grammar.superlatives': 'Superlatifs',
+  'grammar.quantifiers': 'some / any / much / many',
+  'grammar.countable': 'Dénombrables et indénombrables',
+  'modals.can': 'can / could : capacité et permission',
+  'modals.could_request': 'Demandes polies (Could you…?)',
+  'modals.must_have_to': 'Obligation : must / have to',
+  'modals.should': 'Conseil : should',
+  ...Object.fromEntries(Object.entries(THEMES).map(([k, v]) => [`vocab.${k}`, `Vocabulaire : ${v.toLowerCase()}`])),
+};
+
+export const kcLabel = (id: string) => KC_LABELS[id] ?? id;

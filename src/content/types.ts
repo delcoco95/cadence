@@ -65,8 +65,69 @@ export interface TranslateExercise extends ExerciseBase {
   accepted: string[];
 }
 
-export type Exercise = McqExercise | TypeAnswerExercise | ClozeExercise | WordBankExercise | TranslateExercise;
+/** Écouter (synthèse vocale) puis choisir. Le texte audio n'est pas affiché avant la réponse. */
+export interface ListenMcqExercise extends ExerciseBase {
+  type: 'listen_mcq';
+  audio: string;
+  question: string;
+  options: string[];
+  answer: number;
+}
+
+/** Écouter puis écrire ce qui a été entendu. */
+export interface DictationExercise extends ExerciseBase {
+  type: 'dictation';
+  audio: string;
+  accepted: string[];
+}
+
+/**
+ * Parler dans le micro.
+ * - repeat : répéter la phrase affichée (et écoutée) ;
+ * - translate : dire en anglais la phrase française ;
+ * - answer : répondre librement à une question (longueur + mots-clés, exemple de réponse).
+ */
+export interface SpeakExercise extends ExerciseBase {
+  type: 'speak';
+  mode: 'repeat' | 'translate' | 'answer';
+  prompt: string;
+  accepted?: string[];
+  sample?: string;
+  minWords?: number;
+  /** Groupes de mots dont au moins un doit apparaître, ex. [['usually', 'often', 'always']] */
+  keywords?: string[][];
+}
+
+export type Exercise =
+  | McqExercise
+  | TypeAnswerExercise
+  | ClozeExercise
+  | WordBankExercise
+  | TranslateExercise
+  | ListenMcqExercise
+  | DictationExercise
+  | SpeakExercise;
 export type ExerciseType = Exercise['type'];
+
+export interface VocabEntry {
+  id: string;
+  en: string;
+  fr: string;
+  cefr: Cefr;
+  theme: string;
+  pos?: string;
+  example?: string;
+  exampleFr?: string;
+}
+
+export interface IrregularVerb {
+  id: string;
+  base: string;
+  past: string;
+  participle: string;
+  fr: string;
+  cefr: Cefr;
+}
 
 export interface ExplanationSection {
   title: string;

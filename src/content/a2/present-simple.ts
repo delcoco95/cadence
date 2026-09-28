@@ -1,4 +1,5 @@
 import type { Lesson } from '../types';
+import { exercises } from '../builders';
 
 const base = { cefr: 'A2', skill: 'grammar', tense: 'present_simple' } as const;
 
@@ -119,6 +120,16 @@ export const presentSimple1: Lesson = {
       speak: 'My brother repairs computers.',
       explanation: 'My brother = he → repairs / fixes (fix → fixes, verbe en -x).',
     },
+    ...exercises('a2-ps-1-x', 'A2', { kc: 'tense.present_simple.third_person_s', tense: 'present_simple' })
+      .listen('He watches the news every evening.', 'Qu’est-ce qu’il fait tous les soirs ?', ['Il regarde les infos', 'Il lit le journal', 'Il écoute la radio'], 0,
+        'watches the news = regarde les informations.')
+      .dictation('She works in a hospital.', 'works : n’oublie pas le -s à la 3ᵉ personne.')
+      .repeat('My sister studies law and works at the weekend.', 'studies (study → studies), works : deux verbes à la 3ᵉ personne.')
+      .say('Il boit du thé tous les matins.', ['He drinks tea every morning', 'Every morning he drinks tea'], 'drink → drinks. « tous les matins » = every morning.')
+      .answer('What do you usually do on Sundays?', 'On Sundays I usually sleep late, then I go for a walk with my friends.',
+        'Utilise le present simple et un adverbe de fréquence (usually, often, sometimes…).',
+        { keywords: [['usually', 'often', 'sometimes', 'always', 'never']], kc: 'tense.present_simple.usage' })
+      .build(),
   ],
 };
 
@@ -233,5 +244,16 @@ export const presentSimple2: Lesson = {
       speak: 'My computer doesn’t start in the morning.',
       explanation: 'My computer = it → doesn’t + start (sans -s).',
     },
+    ...exercises('a2-ps-2-x', 'A2', { kc: 'tense.present_simple.question', tense: 'present_simple' })
+      .listen('Does your brother live in Paris?', 'Quelle est la question ?', ['Ton frère habite à Paris ?', 'Ton frère travaille à Paris ?', 'Ton frère aime Paris ?'], 0,
+        'Does + your brother + live : question au present simple.')
+      .dictation('We don’t work on Saturdays.', 'don’t + base verbale.', { accepted: ["We don't work on Saturdays.", 'We do not work on Saturdays.'], kc: 'tense.present_simple.negative' })
+      .repeat('Where do you live? What do you do?', 'Deux questions essentielles : où habites-tu, que fais-tu dans la vie.')
+      .say('Est-ce qu’elle parle anglais ?', ['Does she speak English'], 'Does + she + speak (base).')
+      .say('Je n’aime pas les réunions longues.', ["I don't like long meetings", 'I do not like long meetings'], 'don’t + like. L’adjectif se place avant le nom : long meetings.',
+        { kc: 'tense.present_simple.negative' })
+      .answer('What do you do? Do you like your job?', 'I work in IT. Yes, I like my job because I learn new things every day.',
+        'Réponds avec le present simple : I work…, I like… / I don’t like…', { keywords: [['work', 'study'], ['like', "don't like", 'love', 'hate']] })
+      .build(),
   ],
 };

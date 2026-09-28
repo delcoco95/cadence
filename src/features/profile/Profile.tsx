@@ -86,6 +86,22 @@ export function Profile() {
           <span className="muted">›</span>
         </Link>
         <div className="setting">
+          <div>
+            <p style={{ fontWeight: 600 }}>🎙️ Exercices oraux</p>
+            <p className="small muted">Parler dans le micro pendant les leçons et révisions</p>
+          </div>
+          <label className="toggle">
+            <input type="checkbox" checked={settings.speakingEnabled} onChange={(e) => void updateSettings({ speakingEnabled: e.target.checked })} />
+            <span />
+          </label>
+        </div>
+        <div className="setting">
+          <p style={{ fontWeight: 600 }}>Nouveaux mots par jour</p>
+          <select className="field" value={settings.newWordsPerDay} onChange={(e) => void updateSettings({ newWordsPerDay: Number(e.target.value) })}>
+            {[4, 8, 12, 16, 20].map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </div>
+        <div className="setting">
           <p style={{ fontWeight: 600 }}>Accent des voix</p>
           <select className="field" value={settings.accent} onChange={(e) => void updateSettings({ accent: e.target.value as Accent })}>
             <option value="en-GB">🇬🇧 British</option>

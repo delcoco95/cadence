@@ -32,7 +32,7 @@ export async function skillAccuracy(): Promise<Record<string, { accuracy: number
   const attempts = await db.attempts.where('at').above(since).toArray();
   const bySkill = new Map<string, { sum: number; count: number }>();
   for (const a of attempts) {
-    const skill = getExercise(a.exerciseId)?.skill;
+    const skill = a.skill ?? getExercise(a.exerciseId)?.skill;
     if (!skill) continue;
     const acc = bySkill.get(skill) ?? { sum: 0, count: 0 };
     acc.sum += a.score;

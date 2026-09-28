@@ -1,5 +1,7 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { Cefr } from '../content/types';
+import type { Cefr, Skill } from '../content/types';
+import type { SrsCard } from '../core/srs';
+import type { KcState } from '../core/mastery';
 
 export type ThemePref = 'system' | 'light' | 'dark';
 export type Accent = 'en-US' | 'en-GB' | 'en-AU';
@@ -18,6 +20,10 @@ export interface Settings {
   theme: ThemePref;
   accent: Accent;
   speechRate: number;
+  /** Exercices oraux activés (micro) */
+  speakingEnabled: boolean;
+  /** Nouveaux mots présentés par jour */
+  newWordsPerDay: number;
   createdAt: number;
 }
 
@@ -41,7 +47,8 @@ export interface Attempt {
   verdict: 'correct' | 'typo' | 'wrong';
   response: string;
   kcIds: string[];
-  context: 'lesson' | 'review' | 'drill' | 'placement';
+  skill?: Skill;
+  context: 'lesson' | 'review' | 'drill' | 'new' | 'placement';
 }
 
 export interface LessonProgress {
@@ -57,6 +64,8 @@ export const db = new Dexie('cadence') as Dexie & {
   dailyActivity: EntityTable<DailyActivity, 'date'>;
   attempts: EntityTable<Attempt, 'id'>;
   lessonProgress: EntityTable<LessonProgress, 'lessonId'>;
+  srsCards: EntityTable<SrsCard, 'id'>;
+  kcMastery: EntityTable<KcState, 'kcId'>;
 };
 
 db.version(1).stores({
@@ -64,6 +73,12 @@ db.version(1).stores({
   dailyActivity: 'date',
   attempts: '++id, exerciseId, lessonId, at, *kcIds',
   lessonProgress: 'lessonId',
+});
+
+// v2 : répétition espacée et maîtrise par notion
+db.version(2).stores({
+  srsCards: 'id, due, type, itemId',
+  kcMastery: 'kcId',
 });
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -77,11 +92,15 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: 'system',
   accent: 'en-GB',
   speechRate: 0.9,
+  speakingEnabled: true,
+  newWordsPerDay: 8,
   createdAt: Date.now(),
 };
 
 export async function getSettings(): Promise<Settings> {
-  return (await db.settings.get('me')) ?? { ...DEFAULT_SETTINGS, createdAt: Date.now() };
+  // Fusion avec les valeurs par défaut : les réglages créés par une version antérieure n'ont pas les nouveaux champs.
+  const stored = await db.settings.get('me');
+  return { ...DEFAULT_SETTINGS, ...(stored ?? { createdAt: Date.now() }) };
 }
 
 export async function updateSettings(patch: Partial<Omit<Settings, 'id'>>): Promise<void> {
