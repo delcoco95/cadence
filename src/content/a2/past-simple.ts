@@ -151,7 +151,7 @@ export const pastSimple2: Lesson = {
     {
       title: 'Négation et questions : toujours did + base',
       examples: [
-        { en: 'I went → I didn’t go → Did you go?', fr: 'Je suis allé → je ne suis pas allé → es-tu allé ?' },
+        { en: 'I went → I didn’t go → Did you go?', fr: 'Je suis {allé|allée} → je ne suis pas {allé|allée} → es-tu {allé|allée} ?' },
       ],
     },
   ],

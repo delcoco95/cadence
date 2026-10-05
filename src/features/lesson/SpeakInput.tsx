@@ -3,6 +3,8 @@ import type { SpeakExercise } from '../../content/types';
 import { isBlockingError, sttSupported, startListening, type Listening } from '../../speech/stt';
 import type { ExerciseProps } from './ExerciseView';
 import { AudioPrompt } from './AudioPrompt';
+import { SaysPrompt } from './ExerciseView';
+import { MicIcon, StopIcon } from '../../ui/Icons';
 
 type Status = 'idle' | 'listening' | 'done' | 'fallback';
 
@@ -40,7 +42,7 @@ export function SpeakInput({ exercise, locked, onChange, say, lang, onSkipSpeaki
       onError: (code) => {
         if (isBlockingError(code)) {
           setStatus('fallback');
-          setError('Le micro n’est pas disponible ici. Utilise la dictée 🎤 du clavier pour parler.');
+          setError('Le micro n’est pas disponible ici. Utilise la dictée (icône micro) du clavier pour parler.');
         } else if (ERROR_TEXT[code] !== '') {
           setError(ERROR_TEXT[code] ?? `Erreur de reconnaissance (${code}).`);
         }
@@ -66,7 +68,7 @@ export function SpeakInput({ exercise, locked, onChange, say, lang, onSkipSpeaki
           <AudioPrompt text={exercise.prompt} say={say} />
         </>
       )}
-      {exercise.mode === 'translate' && <p className="prompt">{exercise.prompt}</p>}
+      {exercise.mode === 'translate' && <SaysPrompt text={exercise.prompt} />}
       {exercise.mode === 'answer' && (
         <>
           <p className="prompt">{exercise.prompt}</p>
@@ -82,9 +84,9 @@ export function SpeakInput({ exercise, locked, onChange, say, lang, onSkipSpeaki
             onClick={() => (status === 'listening' ? stop() : start())}
             aria-label={status === 'listening' ? 'Arrêter' : 'Parler'}
           >
-            {status === 'listening' ? '■' : '🎙️'}
+            {status === 'listening' ? <StopIcon /> : <MicIcon />}
           </button>
-          <p className="small muted center">
+          <p className="small muted center" style={{ fontWeight: 700 }}>
             {status === 'listening'
               ? 'Je t’écoute… touche le bouton quand tu as fini.'
               : status === 'done'
@@ -100,7 +102,7 @@ export function SpeakInput({ exercise, locked, onChange, say, lang, onSkipSpeaki
             rows={3}
             value={text}
             disabled={locked}
-            placeholder="Touche la zone, puis 🎤 sur le clavier, et parle en anglais…"
+            placeholder="Touche la zone, puis le micro du clavier, et parle en anglais…"
             lang="en"
             autoCapitalize="sentences"
             onChange={(e) => {
@@ -108,8 +110,8 @@ export function SpeakInput({ exercise, locked, onChange, say, lang, onSkipSpeaki
               publish(e.target.value);
             }}
           />
-          <p className="tiny muted" style={{ textTransform: 'none', letterSpacing: 0, fontWeight: 400 }}>
-            Dicte avec la touche 🎤 du clavier iOS (clavier réglé en anglais pour de meilleurs résultats). Écrire à la main fausse l’exercice.
+          <p className="note">
+            Dicte avec la touche micro du clavier iOS (clavier réglé en anglais pour de meilleurs résultats). Écrire à la main fausse l’exercice.
           </p>
         </div>
       )}

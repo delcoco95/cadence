@@ -1,5 +1,5 @@
 import { db, getSettings, type DailyActivity } from './db';
-import { dayKey } from '../core/dates';
+import { addDays, dayKey } from '../core/dates';
 import { computeStreak } from '../core/streak';
 
 async function ensureToday(): Promise<DailyActivity> {
@@ -53,4 +53,34 @@ export async function loadStats() {
   const totalSeconds = days.reduce((a, d) => a + d.activeSeconds, 0);
   const totalXp = days.reduce((a, d) => a + d.xp, 0);
   return { streak, totalSeconds, totalXp, today: days.find((d) => d.date === today) };
+}
+
+export interface WeekDay {
+  date: string;
+  label: string;
+  done: boolean;
+  isToday: boolean;
+  isFuture: boolean;
+}
+
+const WEEK_LABELS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+
+/** Semaine en cours, du lundi au dimanche, avec les jours où l'objectif a été atteint. */
+export async function weekActivity(now: Date = new Date()): Promise<WeekDay[]> {
+  const today = dayKey(now);
+  const monday = addDays(today, -((now.getDay() + 6) % 7));
+  const days = WEEK_LABELS.map((label, i) => ({ label, date: addDays(monday, i) }));
+  const records = await db.dailyActivity.bulkGet(days.map((d) => d.date));
+  return days.map((d, i) => ({
+    ...d,
+    done: !!records[i]?.goalMetAt,
+    isToday: d.date === today,
+    isFuture: d.date > today,
+  }));
+}
+
+/** Nombre de leçons terminées aujourd'hui (quêtes du jour). */
+export async function lessonsDoneToday(now: Date = new Date()): Promise<number> {
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  return db.lessonProgress.filter((p) => p.lastAt >= start).count();
 }

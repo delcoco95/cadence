@@ -1,143 +1,209 @@
-import type { CSSProperties } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { getLesson } from '../../content';
-import { greeting } from '../../core/dates';
-import { loadStats } from '../../db/activity';
+import { lessonsDoneToday, loadStats, weekActivity } from '../../db/activity';
 import { useSettings, useToday } from '../../db/hooks';
 import { nextLessonId } from '../../db/progress';
 import { ERROR_LABELS } from '../../core/errors';
 import { learningStats } from '../../db/learning';
 import { kcLabel } from '../../content/kcs';
+import { dayKey } from '../../core/dates';
 import { ProgressBar } from '../../ui/ProgressBar';
-import { formatMinutes } from '../../ui/format';
+import { Ring } from '../../ui/Ring';
+import { MascotSays } from '../../ui/Mascot';
+import { hello, homeLine, useProfileText } from '../../ui/profile';
+import { unitOfLesson, unitStyle } from '../../ui/units';
+import {
+  BoltIcon, BookIcon, BrainIcon, CheckIcon, ChevronIcon, FlameIcon, LetterIcon, RefreshIcon, StarIcon, TargetIcon, TrophyIcon,
+} from '../../ui/Icons';
 import { UnlockCard } from '../focus/UnlockCard';
 
-export const SKILL_LABELS: Record<string, string> = {
-  grammar: '🧩 Grammar',
-  vocabulary: '📚 Vocabulary',
-  listening: '🎧 Listening',
-  reading: '📖 Reading',
-  writing: '✍️ Writing',
-  speaking: '🗣️ Speaking',
-};
+const QUEST_XP = 50;
 
 export function Home() {
   const settings = useSettings();
   const today = useToday();
   const stats = useLiveQuery(() => loadStats());
+  const week = useLiveQuery(() => weekActivity());
+  const lessonsToday = useLiveQuery(() => lessonsDoneToday());
   const nextId = useLiveQuery(() => nextLessonId());
   const learning = useLiveQuery(() => learningStats());
+  const p = useProfileText();
   const lesson = nextId ? getLesson(nextId) : undefined;
+  const unit = nextId ? unitOfLesson(nextId) : undefined;
 
-  const goalSeconds = today?.goalSeconds ?? (settings?.dailyGoalMinutes ?? 5) * 60;
+  const goalMinutes = settings?.dailyGoalMinutes ?? 5;
+  const goalSeconds = today?.goalSeconds ?? goalMinutes * 60;
   const active = today?.activeSeconds ?? 0;
   const goalMet = !!today?.goalMetAt;
   const pct = Math.min(1, active / goalSeconds);
+  const streak = stats?.streak.current ?? 0;
+  const xpToday = today?.xp ?? 0;
+  const seed = Number(dayKey().replaceAll('-', ''));
+  const minutesDone = Math.floor(active / 60);
+  const minutesLeft = Math.max(1, Math.ceil((goalSeconds - active) / 60));
+  const lessonStarted = (lessonsToday ?? 0) > 0;
+
+  const quests = [
+    { icon: <TargetIcon />, tone: 'tone-sun', label: `Pratiquer ${goalMinutes} min`, value: active / goalSeconds, count: `${Math.min(minutesDone, goalMinutes)} / ${goalMinutes}` },
+    { icon: <BookIcon />, tone: 'tone-primary', label: 'Terminer une leçon', value: Math.min(1, lessonsToday ?? 0), count: `${Math.min(1, lessonsToday ?? 0)} / 1` },
+    { icon: <BoltIcon />, tone: 'tone-sky', label: `Gagner ${QUEST_XP} XP`, value: xpToday / QUEST_XP, count: `${Math.min(xpToday, QUEST_XP)} / ${QUEST_XP}` },
+  ];
 
   return (
     <div className="screen">
-      <header className="row spread">
-        <div>
-          <p className="muted small">🇬🇧 {greeting()}!</p>
-          <h1>Today</h1>
+      <header className="topbar">
+        <span className="pill level">{settings?.startLevel ?? 'A2'}</span>
+        <div className="pills">
+          <span className={`pill flame${stats?.streak.todayDone ? '' : ' off'}`} aria-label={`Série de ${streak} jours`}>
+            <FlameIcon /> {streak}
+          </span>
+          <span className="pill bolt" aria-label={`${xpToday} XP aujourd’hui`}>
+            <BoltIcon /> {xpToday}
+          </span>
         </div>
-        <span className="chip accent" title="Ton niveau">{settings?.startLevel ?? 'A2'}</span>
       </header>
 
-      <section className="card stack">
-        <div className="row spread">
-          <h3>{goalMet ? '✅ Objectif atteint' : `Objectif : ${settings?.dailyGoalMinutes ?? 5} min`}</h3>
-          <span className="muted small">{Math.round(pct * 100)} %</span>
+      <MascotSays mood={goalMet ? 'cheer' : 'happy'}>
+        <span className="muted small" style={{ display: 'block', fontWeight: 800 }}>{hello(p, new Date().getHours())}</span>
+        {homeLine(p, { goalMet, started: active > 30 || lessonStarted, streak }, seed)}
+      </MascotSays>
+
+      {settings && !settings.firstName && (
+        <Link to="/profile" className="card soft list-link" style={{ borderBottomWidth: 2 }}>
+          <span className="icon-tile tone-primary"><StarIcon /></span>
+          <span className="grow">
+            <b>Fais connaissance avec Coco</b>
+            <span className="note" style={{ display: 'block' }}>Ton prénom et ton genre, pour des phrases bien accordées.</span>
+          </span>
+          <ChevronIcon />
+        </Link>
+      )}
+
+      <section className="card goal-card">
+        <Ring value={pct} size={92} stroke={11} tone={goalMet ? 'success' : 'primary'}>
+          {goalMet ? (
+            <CheckIcon style={{ width: 38, height: 38, color: 'var(--success)' }} />
+          ) : (
+            <div><b>{minutesDone}</b><span>/ {goalMinutes} min</span></div>
+          )}
+        </Ring>
+        <div className="grow stack" style={{ gap: 4 }}>
+          <h3>{goalMet ? 'Objectif atteint !' : 'Objectif du jour'}</h3>
+          <p className="small muted">
+            {goalMet
+              ? 'Tout ce que tu fais maintenant, c’est du bonus pour ton cerveau.'
+              : `Encore ${minutesLeft} min de pratique active pour garder ta série.`}
+          </p>
         </div>
-        <ProgressBar value={pct} tone={goalMet ? 'success' : undefined} />
-        <p className="small muted">
-          {goalMet
-            ? `${formatMinutes(active)} aujourd’hui. Tout ce que tu fais en plus est du bonus.`
-            : `Encore ${formatMinutes(Math.max(0, goalSeconds - active) + 59)} de pratique active.`}
-        </p>
       </section>
 
       <UnlockCard />
 
       {lesson && (
-        <section className="card accent stack">
-          <p className="tiny" style={{ color: 'var(--accent)' }}>Leçon du jour · {lesson.cefr}</p>
-          <div>
+        <section className="cta-card" style={unit ? unitStyle(unit.id) : undefined}>
+          <p className="tiny">{unit ? `${unit.title} · ` : ''}{lesson.cefr}</p>
+          <div className="stack" style={{ gap: 4 }}>
             <h2>{lesson.title}</h2>
-            <p className="muted small">{lesson.subtitle} · ~{lesson.estMinutes} min</p>
+            <p>{lesson.subtitle} · {lesson.estMinutes} min</p>
           </div>
-          <Link className="btn" to={`/lesson/${lesson.id}`}>{goalMet ? 'Continuer à apprendre' : 'START LESSON'}</Link>
+          <Link className="btn white" to={`/lesson/${lesson.id}`}>
+            {goalMet ? 'Continuer à apprendre' : lessonStarted ? 'Leçon suivante' : 'C’est parti !'}
+          </Link>
+        </section>
+      )}
+
+      <section className="card">
+        <div className="section-title" style={{ marginBottom: 4 }}>
+          <h3><TrophyIcon style={{ color: 'var(--sun)' }} />Quêtes du jour</h3>
+          <span className="chip sun">{quests.filter((q) => q.value >= 1).length} / 3</span>
+        </div>
+        {quests.map((q) => (
+          <div key={q.label} className={`quest${q.value >= 1 ? ' done' : ''}`}>
+            <span className={`icon-tile ${q.tone}`}>{q.value >= 1 ? <CheckIcon /> : q.icon}</span>
+            <div className="grow">
+              <div className="row spread"><b>{q.label}</b><span className="count">{q.count}</span></div>
+              <ProgressBar value={q.value} tone="sun" thin />
+            </div>
+          </div>
+        ))}
+      </section>
+
+      {week && (
+        <section className="card stack">
+          <div className="section-title">
+            <h3><FlameIcon style={{ color: 'var(--flame)' }} />{streak > 0 ? `${streak} jour${streak > 1 ? 's' : ''} de série` : 'Lance ta série'}</h3>
+            {(stats?.streak.best ?? 0) > 0 && <span className="chip">record : {stats!.streak.best}</span>}
+          </div>
+          <div className="week">
+            {week.map((d) => (
+              <div key={d.date} className={`${d.done ? 'done' : ''}${d.isToday ? ' today' : ''}`}>
+                <span>{d.label}</span>
+                <i>{d.done && <FlameIcon />}</i>
+              </div>
+            ))}
+          </div>
         </section>
       )}
 
       {learning && (
-        <section className="card stack">
-          <div className="row spread">
-            <h3>↻ Séance du jour</h3>
-            {learning.dueCount > 0 && <span className="chip amber">{learning.dueCount} à revoir</span>}
-          </div>
-          <p className="small muted">
-            {learning.dueCount > 0
-              ? 'Révisions espacées, nouveaux mots et verbes, exercices sur tes points faibles.'
-              : 'Aucune révision en attente : la séance te présente de nouveaux mots et verbes.'}
-          </p>
-          <Link className="btn secondary" to="/practice/all">Lancer la séance</Link>
-        </section>
+        <Link to="/practice/all" className="card list-link" style={{ padding: 16 }}>
+          <span className="icon-tile tone-sky"><RefreshIcon /></span>
+          <span className="grow">
+            <b style={{ display: 'block' }}>Séance de révision</b>
+            <span className="note">
+              {learning.dueCount > 0 ? `${learning.dueCount} élément${learning.dueCount > 1 ? 's' : ''} à revoir aujourd’hui` : 'Nouveaux mots et verbes à découvrir'}
+            </span>
+          </span>
+          {learning.dueCount > 0 && <span className="chip sky">{learning.dueCount}</span>}
+          <ChevronIcon />
+        </Link>
       )}
 
       {learning && (learning.persistent.length > 0 || learning.weak.length > 0 || learning.forgetting.length > 0) && (
         <section className="card stack">
-          <h3>🎯 À travailler</h3>
-          {learning.persistent.slice(0, 2).map((p) => (
-            <div key={p.kcId + p.tag} className="row spread small" style={{ alignItems: 'flex-start' }}>
-              <span><b>Difficulté persistante</b> · {ERROR_LABELS[p.tag]}<br /><span className="muted">{kcLabel(p.kcId)}</span></span>
-              <span className="chip amber">{p.count}× / 14 j</span>
+          <div className="section-title">
+            <h3><TargetIcon style={{ color: 'var(--danger)' }} />À travailler</h3>
+          </div>
+          {learning.persistent.slice(0, 2).map((x) => (
+            <div key={x.kcId + x.tag} className="row" style={{ alignItems: 'flex-start' }}>
+              <span className="grow small"><b>{ERROR_LABELS[x.tag]}</b><br /><span className="muted">{kcLabel(x.kcId)}</span></span>
+              <span className="chip danger">{x.count}× en 14 j</span>
             </div>
           ))}
           {learning.weak.slice(0, 3).map((w) => (
-            <div key={w.kcId} className="stack" style={{ '--gap': '6px' } as CSSProperties}>
+            <div key={w.kcId} className="stack" style={{ gap: 6 }}>
               <div className="row spread small">
-                <span>{kcLabel(w.kcId)}</span>
-                <span className="muted">maîtrise {Math.round((w.summary.value ?? 0) * 100)} %</span>
+                <b>{kcLabel(w.kcId)}</b>
+                <span className="muted">{Math.round((w.summary.value ?? 0) * 100)} %</span>
               </div>
-              <ProgressBar value={w.summary.value ?? 0} thin />
+              <ProgressBar value={w.summary.value ?? 0} tone="primary" thin />
             </div>
           ))}
           {learning.forgetting.slice(0, 2).map((f) => (
             <p key={f.kcId} className="small">
-              <b>À réviser</b> · {kcLabel(f.kcId)} <span className="muted">(maîtrise {Math.round((f.summary.value ?? 0) * 100)} %, rétention {Math.round((f.retention ?? 0) * 100)} %)</span>
+              <b>À réviser :</b> {kcLabel(f.kcId)} <span className="muted">(tu t’en souviens à {Math.round((f.retention ?? 0) * 100)} %)</span>
             </p>
           ))}
-          <Link className="btn secondary small" to="/practice/weak">S’entraîner sur mes points faibles</Link>
+          <Link className="btn secondary small" style={{ width: '100%' }} to="/practice/weak">M’entraîner sur ces points</Link>
         </section>
       )}
 
       {learning && (
-        <section className="card stack">
-          <div className="row spread">
-            <h3>Ta progression réelle</h3>
-            {learning.retention !== null && <span className="chip">rétention {Math.round(learning.retention * 100)} %</span>}
+        <section className="stack" style={{ gap: 10 }}>
+          <div className="section-title" style={{ padding: '0 4px' }}>
+            <h3>Ta progression</h3>
+            <Link to="/progress" className="chip primary" style={{ textDecoration: 'none' }}>Détail</Link>
           </div>
           <div className="stats">
-            <div className="stat"><b>{learning.byState.mastered}</b><span>notions maîtrisées</span></div>
-            <div className="stat"><b>{learning.byState.developing + learning.byState.practicing}</b><span>notions en cours</span></div>
-            <div className="stat"><b>📚 {learning.wordsActive}</b><span>mots actifs ({learning.wordsPassive} reconnus seulement)</span></div>
-            <div className="stat"><b>🔤 {learning.verbsLearned}</b><span>verbes irréguliers retenus</span></div>
+            <div className="stat"><span className="icon-tile tone-success"><StarIcon /></span><div><b>{learning.byState.mastered}</b><span>notions maîtrisées</span></div></div>
+            <div className="stat"><span className="icon-tile tone-primary"><BrainIcon /></span><div><b>{learning.byState.developing + learning.byState.practicing}</b><span>en cours</span></div></div>
+            <div className="stat"><span className="icon-tile tone-pink"><BookIcon /></span><div><b>{learning.wordsActive}</b><span>mots actifs</span></div></div>
+            <div className="stat"><span className="icon-tile tone-teal"><LetterIcon /></span><div><b>{learning.verbsLearned}</b><span>verbes irréguliers</span></div></div>
           </div>
-          <p className="tiny muted" style={{ textTransform: 'none', letterSpacing: 0, fontWeight: 400 }}>
-            Une notion n’est « maîtrisée » qu’après des réussites en production, à plusieurs jours d’intervalle. Un mot est « actif » quand tu sais le retrouver ou le dire, pas seulement le reconnaître.
+          <p className="note" style={{ padding: '0 4px' }}>
+            Un mot est « actif » quand tu sais le retrouver ou le dire ({learning.wordsPassive} autres reconnus seulement).
           </p>
-          <Link className="btn ghost small" to="/progress">Voir le détail par notion</Link>
-        </section>
-      )}
-
-      {stats && (
-        <section className="stats">
-          <div className="stat"><b>🔥 {stats.streak.current}</b><span>jour{stats.streak.current > 1 ? 's' : ''} de série</span></div>
-          <div className="stat"><b>🏆 {stats.streak.best}</b><span>meilleure série</span></div>
-          <div className="stat"><b>📅 {stats.streak.daysCompleted}</b><span>jours complétés</span></div>
-          <div className="stat"><b>⏱️ {formatMinutes(stats.totalSeconds)}</b><span>temps total</span></div>
         </section>
       )}
     </div>

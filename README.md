@@ -1,7 +1,7 @@
 # Cadence
 
 Application personnelle d'apprentissage de l'anglais (A2 → C2), sous forme de PWA gratuite à installer sur l'iPhone.
-Architecture : [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Architecture : [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Design et expérience : [docs/DESIGN.md](docs/DESIGN.md).
 
 ## Développer (sur le PC)
 

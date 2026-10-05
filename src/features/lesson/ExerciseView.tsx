@@ -3,6 +3,8 @@ import type { Exercise, ListenMcqExercise, McqExercise, WordBankExercise } from 
 import { seededShuffle, type ExerciseResponse } from '../../core/exercise';
 import { SpeakInput } from './SpeakInput';
 import { AudioPrompt } from './AudioPrompt';
+import { Mascot } from '../../ui/Mascot';
+import { sfx } from '../../ui/sfx';
 
 export interface ExerciseProps {
   exercise: Exercise;
@@ -26,7 +28,7 @@ export function ExerciseView(props: Props) {
   const { exercise: ex } = props;
   return (
     <div className="stack" style={{ '--gap': '20px' } as CSSProperties}>
-      <p className="tiny muted">{ex.instruction}</p>
+      <h2 className="instruction">{ex.instruction}</h2>
       {(ex.type === 'mcq' || ex.type === 'listen_mcq') && <Mcq {...props} exercise={ex} />}
       {ex.type === 'word_bank' && <WordBank {...props} exercise={ex} />}
       {(ex.type === 'type_answer' || ex.type === 'cloze' || ex.type === 'translate' || ex.type === 'dictation') && (
@@ -44,9 +46,9 @@ function Mcq({ exercise, locked, revealIndex, onChange, say, shuffleSeed }: Prop
     <>
       {exercise.type === 'listen_mcq' && <AudioPrompt text={exercise.audio} say={say} />}
       <p className="prompt">{exercise.question}</p>
-      {exercise.type === 'listen_mcq' && locked && <p className="muted">« {exercise.audio} »</p>}
+      {exercise.type === 'listen_mcq' && locked && <p className="muted" style={{ fontWeight: 700 }}>« {exercise.audio} »</p>}
       <div className="stack" style={{ '--gap': '10px' } as CSSProperties}>
-        {order.map((i) => {
+        {order.map((i, n) => {
           let cls = 'option';
           if (locked && i === revealIndex) cls += ' correct';
           else if (locked && i === selected) cls += ' wrong';
@@ -57,11 +59,13 @@ function Mcq({ exercise, locked, revealIndex, onChange, say, shuffleSeed }: Prop
               className={cls}
               disabled={locked}
               onClick={() => {
+                sfx.tap();
                 setSelected(i);
                 onChange({ kind: 'choice', index: i });
               }}
             >
-              {exercise.options[i]}
+              <span className="key">{n + 1}</span>
+              <span>{exercise.options[i]}</span>
             </button>
           );
         })}
@@ -86,7 +90,7 @@ function TextAnswer({ exercise, locked, onChange, onSubmit, say }: Props) {
     );
     placeholder = 'Mot(s) manquant(s)';
   } else if (exercise.type === 'translate') {
-    prompt = <p className="prompt">{exercise.source}</p>;
+    prompt = <SaysPrompt text={exercise.source} />;
     placeholder = exercise.direction === 'fr_en' ? 'In English…' : 'En français…';
   } else if (exercise.type === 'type_answer') {
     prompt = <p className="prompt">{exercise.question}</p>;
@@ -151,7 +155,7 @@ function WordBank({ exercise, locked, onChange, shuffleSeed }: Props & { exercis
   };
   return (
     <>
-      <p className="prompt">{exercise.question}</p>
+      <SaysPrompt text={exercise.question} />
       <div className="answer-line">
         {picked.map((i) => (
           <button key={i} className="token" disabled={locked} onClick={() => emit(picked.filter((p) => p !== i))}>
@@ -165,12 +169,25 @@ function WordBank({ exercise, locked, onChange, shuffleSeed }: Props & { exercis
             key={i}
             className={`token${picked.includes(i) ? ' used' : ''}`}
             disabled={locked || picked.includes(i)}
-            onClick={() => emit([...picked, i])}
+            onClick={() => {
+              sfx.tap();
+              emit([...picked, i]);
+            }}
           >
             {t}
           </button>
         ))}
       </div>
     </>
+  );
+}
+
+/** Phrase à traduire, « dite » par Coco dans une bulle. */
+export function SaysPrompt({ text }: { text: string }) {
+  return (
+    <div className="prompt-card">
+      <Mascot mood="idle" size={68} />
+      <div className="bubble">{text}</div>
+    </div>
   );
 }

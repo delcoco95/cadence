@@ -46,7 +46,7 @@ export const articlesPlurals: Lesson = {
     .listen('I need an umbrella and two boxes.', 'De quoi a-t-il besoin ?', ['Un parapluie et deux boîtes', 'Un parapluie et deux bus', 'Une valise et deux boîtes'], 0,
       'an umbrella (voyelle), boxes (box + es).', { kc: 'grammar.plurals' })
     .repeat('An apple, an hour, a university, a European city.', 'On choisit a / an selon le SON, pas la lettre : a European (/ju/), an hour (h muet).', { d: 0 })
-    .say('Je suis développeur.', ["I'm a developer", 'I am a developer', "I'm a software developer", 'I am a software developer'], 'Métier → a developer.')
+    .say('Je suis {développeur|développeuse}.', ["I'm a developer", 'I am a developer', "I'm a software developer", 'I am a software developer'], 'Métier → a developer.')
     .build(),
 };
 

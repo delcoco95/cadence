@@ -7,11 +7,12 @@ import { ERROR_LABELS } from '../../core/errors';
 import { learningStats, type KcReport } from '../../db/learning';
 import { BackIcon } from '../../ui/Icons';
 import { ProgressBar } from '../../ui/ProgressBar';
+import { MascotSays } from '../../ui/Mascot';
 
 const STATE_CHIP: Record<string, string> = {
   learning: 'chip',
-  practicing: 'chip amber',
-  developing: 'chip accent',
+  practicing: 'chip sun',
+  developing: 'chip primary',
   mastered: 'chip success',
 };
 
@@ -31,9 +32,9 @@ export function ProgressScreen() {
 
   return (
     <div className="screen full">
-      <div className="row">
+      <div className="page-title">
         <button className="icon-btn" aria-label="Retour" onClick={() => navigate(-1)}><BackIcon /></button>
-        <h2>Détail par notion</h2>
+        <h2>Mes notions</h2>
       </div>
       <p className="small muted">
         La maîtrise vient surtout de la production (écrire, dire, réutiliser) ; la rétention indique si tu t’en souviens aujourd’hui.
@@ -50,7 +51,9 @@ export function ProgressScreen() {
         </section>
       )}
 
-      {reports.length === 0 && <p className="muted">Fais une leçon pour voir apparaître tes notions.</p>}
+      {reports.length === 0 && (
+        <MascotSays mood="think">Fais une première leçon : tes notions apparaîtront ici, avec ta maîtrise et ta mémoire.</MascotSays>
+      )}
       {reports.map((r) => <KcCard key={r.kcId} report={r} />)}
     </div>
   );
@@ -61,18 +64,18 @@ function KcCard({ report }: { report: KcReport }) {
   return (
     <section className="card stack" style={{ gap: 10 }}>
       <div className="row spread" style={{ alignItems: 'flex-start' }}>
-        <h3 style={{ fontSize: 16 }}>{kcLabel(report.kcId)}</h3>
+        <h3 style={{ fontSize: 17 }}>{kcLabel(report.kcId)}</h3>
         <span className={STATE_CHIP[s.state] ?? 'chip'}>{STATE_LABELS[s.state]}</span>
       </div>
       <div className="row spread small">
         <span>Maîtrise</span>
         <span className="muted">{s.confident && s.value !== null ? `${Math.round(s.value * 100)} %` : `pas assez de données (${s.observations})`}</span>
       </div>
-      <ProgressBar value={s.value ?? 0} thin />
+      <ProgressBar value={s.value ?? 0} tone="primary" thin />
       {report.retention !== undefined && (
         <div className="row spread small">
           <span>Rétention aujourd’hui</span>
-          <span className={report.retention < 0.7 ? '' : 'muted'} style={report.retention < 0.7 ? { color: 'var(--amber)' } : undefined}>
+          <span className={report.retention < 0.7 ? '' : 'muted'} style={report.retention < 0.7 ? { color: 'var(--sun-dark)', fontWeight: 800 } : undefined}>
             {Math.round(report.retention * 100)} %
           </span>
         </div>
@@ -85,7 +88,7 @@ function KcCard({ report }: { report: KcReport }) {
           </div>
         ))}
       </div>
-      {s.cap && <p className="tiny muted" style={{ textTransform: 'none', letterSpacing: 0, fontWeight: 400 }}>{CAP_TEXT[s.cap]}</p>}
+      {s.cap && <p className="note">{CAP_TEXT[s.cap]}</p>}
     </section>
   );
 }

@@ -6,13 +6,26 @@ import type { ErrorEvent } from '../core/errors';
 import type { Evidence } from '../core/evidence';
 import type { ErrorTag } from '../content/types';
 import { replayAttempts } from './replay';
+import type { Gender } from '../core/gender';
+import type { VoiceGenderPref } from '../speech/voices';
 
 export type ThemePref = 'system' | 'light' | 'dark';
 export type Accent = 'en-US' | 'en-GB' | 'en-AU';
+export type Motivation = 'travel' | 'work' | 'studies' | 'culture' | 'people' | 'brain';
+
+export interface VoicePref {
+  /** Nom exact de la voix choisie (absent : meilleure voix disponible) */
+  name?: string;
+  gender: VoiceGenderPref;
+}
 
 export interface Settings {
   id: 'me';
   onboarded: boolean;
+  firstName: string;
+  /** Accord des textes français : « prête » / « prêt » / « prêt·e » */
+  gender: Gender;
+  motivation?: Motivation;
   dailyGoalMinutes: number;
   startLevel: Cefr;
   /** L'utilisateur veut bloquer ses apps via Raccourcis */
@@ -24,6 +37,10 @@ export interface Settings {
   theme: ThemePref;
   accent: Accent;
   speechRate: number;
+  voiceName?: string;
+  voiceGender: VoiceGenderPref;
+  /** Sons de réussite / d'erreur */
+  soundEffects: boolean;
   /** Exercices oraux activés (micro) */
   speakingEnabled: boolean;
   /** Nouveaux mots présentés par jour */
@@ -110,6 +127,8 @@ db.version(3)
 export const DEFAULT_SETTINGS: Settings = {
   id: 'me',
   onboarded: false,
+  firstName: '',
+  gender: 'n',
   dailyGoalMinutes: 5,
   startLevel: 'A2',
   blockingEnabled: false,
@@ -118,6 +137,8 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: 'system',
   accent: 'en-GB',
   speechRate: 0.9,
+  voiceGender: 'any',
+  soundEffects: true,
   speakingEnabled: true,
   newWordsPerDay: 8,
   askConfidence: true,
@@ -134,6 +155,11 @@ export async function updateSettings(patch: Partial<Omit<Settings, 'id'>>): Prom
   const current = await getSettings();
   await db.settings.put({ ...current, ...patch, id: 'me' });
 }
+
+export const voicePref = (s: Pick<Settings, 'voiceName' | 'voiceGender'>): VoicePref => ({
+  name: s.voiceName,
+  gender: s.voiceGender,
+});
 
 /** Demande à Safari de ne pas effacer les données (PWA installée). */
 export async function requestPersistentStorage(): Promise<boolean> {

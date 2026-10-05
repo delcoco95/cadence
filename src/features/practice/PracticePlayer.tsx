@@ -9,6 +9,7 @@ import { ExerciseRunner, type RunSummary } from '../lesson/ExerciseRunner';
 import { GoalBanner } from '../lesson/GoalBanner';
 import { useActiveTime } from '../lesson/useActiveTime';
 import { SessionSummary } from '../lesson/SessionSummary';
+import { Mascot } from '../../ui/Mascot';
 
 export const FOCUS_TITLES: Record<Focus, string> = {
   all: 'Séance du jour',
@@ -44,15 +45,22 @@ export function PracticePlayer() {
     };
   }, [f]);
 
-  if (!items) return <div className="screen full"><p className="muted">Préparation de la séance…</p></div>;
+  if (!items) {
+    return (
+      <div className="screen full" style={{ justifyContent: 'center', alignItems: 'center' }}>
+        <Mascot mood="think" size={110} />
+        <p className="muted" style={{ fontWeight: 800 }}>Coco prépare ta séance…</p>
+      </div>
+    );
+  }
 
-  if (summary) return <SessionSummary title={FOCUS_TITLES[f]} score={summary.score} xp={summary.xp} empty={summary.answered === 0} />;
+  if (summary) return <SessionSummary title={FOCUS_TITLES[f]} summary={summary} empty={summary.answered === 0} />;
 
   if (items.length === 0) {
     return (
       <div className="screen full" style={{ justifyContent: 'center' }}>
-        <div className="stack center" style={{ gap: 12 }}>
-          <p style={{ fontSize: 44 }}>🌿</p>
+        <div className="stack center" style={{ gap: 12, alignItems: 'center' }}>
+          <Mascot mood="happy" size={120} />
           <h2>Rien à réviser pour l’instant</h2>
           <p className="muted">
             {f === 'weak'
