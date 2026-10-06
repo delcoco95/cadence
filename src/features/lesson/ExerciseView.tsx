@@ -45,6 +45,7 @@ function Mcq({ exercise, locked, revealIndex, onChange, say, shuffleSeed }: Prop
   return (
     <>
       {exercise.type === 'listen_mcq' && <AudioPrompt text={exercise.audio} say={say} />}
+      {exercise.type === 'mcq' && exercise.passage && <div className="passage" lang="en">{exercise.passage}</div>}
       <p className="prompt">{exercise.question}</p>
       {exercise.type === 'listen_mcq' && locked && <p className="muted" style={{ fontWeight: 700 }}>« {exercise.audio} »</p>}
       <div className="stack" style={{ '--gap': '10px' } as CSSProperties}>

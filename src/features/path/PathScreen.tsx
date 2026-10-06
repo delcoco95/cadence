@@ -1,39 +1,67 @@
+import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { CEFR_LEVELS } from '../../content/types';
-import { getLesson, unitsForLevel, PATH } from '../../content';
-import { db } from '../../db/db';
-import { nextLessonId } from '../../db/progress';
+import { getLesson, UNITS } from '../../content';
+import type { Step, UnitView } from '../../core/units';
+import { loadPath, stepPath } from '../../db/units';
+import { useSettings } from '../../db/hooks';
 import { Mascot } from '../../ui/Mascot';
 import { unitStyle } from '../../ui/units';
-import { BookIcon, CheckIcon, LockIcon, RefreshIcon, StarIcon } from '../../ui/Icons';
+import { BookIcon, CheckIcon, CrownIcon, DumbbellIcon, LockIcon, RefreshIcon, StarIcon, TargetIcon, TrophyIcon } from '../../ui/Icons';
 import { ProgressBar } from '../../ui/ProgressBar';
 
 /** Décalage horizontal des pastilles : le chemin serpente. */
 const WAVE = [0, 46, 70, 46, 0, -46, -70, -46];
 
+const VIA_LABEL = { challenge: 'Validée', placement: 'Validée par le test', jump: 'Validée (saut)', self: 'Ouverte (niveau choisi)' } as const;
+
+function stepLabel(s: Step): string {
+  if (s.kind === 'lesson') return getLesson(s.lessonId!)?.title ?? '';
+  return s.kind === 'practice' ? 'Entraînement' : 'Défi de l’unité';
+}
+
+function StepIcon({ s }: { s: Step }) {
+  if (s.status === 'locked') return <LockIcon />;
+  if (s.kind === 'practice') return s.status === 'done' ? <CheckIcon /> : <DumbbellIcon />;
+  if (s.kind === 'challenge') return s.status === 'done' ? <CrownIcon /> : <TrophyIcon />;
+  if (s.status === 'consolidate') return <RefreshIcon />;
+  return s.status === 'done' ? <CheckIcon /> : <StarIcon />;
+}
+
+interface Sheet {
+  view: UnitView;
+  step: Step;
+}
+
 export function PathScreen() {
-  const progress = useLiveQuery(async () => new Map((await db.lessonProgress.toArray()).map((p) => [p.lessonId, p])));
-  const nextId = useLiveQuery(() => nextLessonId());
-  const done = progress ? PATH.filter((id) => progress.get(id)?.status === 'completed').length : 0;
-  let step = 0;
+  const path = useLiveQuery(() => loadPath());
+  const settings = useSettings();
+  const navigate = useNavigate();
+  const [sheet, setSheet] = useState<Sheet | null>(null);
+  if (!path) return null;
+  let wave = 0;
+  const next = path.next;
+  const isNext = (s: Step) => !!next && next.unitId === s.unitId && next.kind === s.kind && next.lessonId === s.lessonId;
 
   return (
     <div className="screen">
       <header className="stack" style={{ gap: 8 }}>
         <div className="row spread">
           <h1>Ton parcours</h1>
-          <span className="pill level">A2 → C2</span>
+          <Link to="/placement" className="pill level" style={{ textDecoration: 'none' }}>
+            {settings?.estimatedBand ? `Niveau ${settings.estimatedBand}` : 'Test de niveau'}
+          </Link>
         </div>
         <div className="row" style={{ gap: 10 }}>
-          <div className="grow"><ProgressBar value={done / PATH.length} tone="sun" label="Leçons du niveau A2" /></div>
-          <span className="small muted" style={{ fontWeight: 800 }}>{done} / {PATH.length}</span>
+          <div className="grow"><ProgressBar value={path.validatedCount / UNITS.length} tone="sun" label="Unités validées" /></div>
+          <span className="small muted" style={{ fontWeight: 800 }}>{path.validatedCount} / {UNITS.length} unités</span>
         </div>
       </header>
 
       {CEFR_LEVELS.map((level) => {
-        const units = unitsForLevel(level);
-        if (units.length === 0) {
+        const views = path.units.filter((v) => v.unit.cefr === level);
+        if (views.length === 0) {
           return (
             <div key={level} className="level-soon">
               <span className="icon-tile" style={{ background: 'var(--surface-2)', color: 'var(--muted)' }}><LockIcon /></span>
@@ -44,46 +72,102 @@ export function PathScreen() {
             </div>
           );
         }
-        return units.map((u, ui) => (
-          <section key={u.id} className="unit" style={unitStyle(u.id)}>
-            <div className="unit-banner">
-              <div className="grow">
-                <p className="tiny">{level} · Unité {ui + 1}</p>
-                <h2 style={{ fontSize: 21 }}>{u.title}</h2>
-                <p>{u.description}</p>
+        return views.map((v) => {
+          const index = UNITS.indexOf(v.unit);
+          return (
+            <section key={v.unit.id} className={`unit${v.unlocked ? '' : ' locked'}`} style={unitStyle(v.unit.id)}>
+              <div className="unit-banner">
+                <div className="grow">
+                  <p className="tiny">{level} · Unité {index + 1}</p>
+                  <h2 style={{ fontSize: 21 }}>{v.unit.title}</h2>
+                  <p>{v.unit.description}</p>
+                  {v.validated && (
+                    <span className="chip" style={{ background: 'rgb(255 255 255 / .22)', color: 'inherit', marginTop: 8 }}>
+                      <CrownIcon />{VIA_LABEL[v.via ?? 'challenge']}
+                    </span>
+                  )}
+                </div>
+                {v.unlocked ? (
+                  <span className="icon-tile">{v.validated ? <CrownIcon /> : <BookIcon />}</span>
+                ) : (
+                  <Link to={`/unit/${v.unit.id}/challenge?jump=1`} className="btn small secondary" style={{ flex: 'none' }}>Sauter ici</Link>
+                )}
               </div>
-              <span className="icon-tile"><BookIcon /></span>
-            </div>
-            <div className="path-nodes">
-              {u.lessonIds.map((id) => {
-                const lesson = getLesson(id)!;
-                const p = progress?.get(id);
-                const isDone = p?.status === 'completed';
-                const consolidate = isDone && p!.bestScore < 0.7;
-                const isNext = id === nextId && !isDone;
-                const offset = WAVE[step++ % WAVE.length];
-                const cls = consolidate ? 'consolidate' : isDone ? 'done' : isNext ? 'next' : 'todo';
-                const status = consolidate ? 'à consolider' : isDone ? `terminée, ${Math.round(p!.bestScore * 100)} %` : isNext ? 'prochaine leçon' : 'à venir';
-                return (
-                  <div key={id} className="node-wrap" style={{ transform: `translateX(${offset}px)` }}>
-                    {isNext && <span className="node-tip">Commencer</span>}
-                    <Link to={`/lesson/${id}`} className={`node ${cls}`} aria-label={`${lesson.title}, ${status}`}>
-                      {isNext && <span className="node-ring" />}
-                      {consolidate ? <RefreshIcon /> : isDone ? <CheckIcon /> : <StarIcon />}
-                    </Link>
-                    <span className="node-label">{lesson.title}</span>
-                    {isNext && (
-                      <span className="path-mascot" style={offset >= 0 ? { right: 'calc(100% + 18px)' } : { left: 'calc(100% + 18px)' }}>
-                        <Mascot mood="happy" size={78} />
+              <div className="path-nodes">
+                {v.steps.map((s) => {
+                  const offset = WAVE[wave++ % WAVE.length];
+                  const nextHere = isNext(s);
+                  const cls = [
+                    'node',
+                    s.kind !== 'lesson' ? s.kind : '',
+                    s.status === 'locked' ? 'locked' : s.status === 'available' ? (nextHere ? 'next' : 'todo') : s.status,
+                  ].join(' ');
+                  const label = stepLabel(s);
+                  const key = `${s.kind}-${s.lessonId ?? s.unitId}`;
+                  return (
+                    <div key={key} className={`node-wrap${nextHere ? ' has-tip' : ''}`} style={{ transform: `translateX(${offset}px)` }}>
+                      {nextHere && <span className="node-tip">{s.kind === 'challenge' ? 'Défi !' : 'Commencer'}</span>}
+                      <button
+                        className={cls}
+                        style={{ border: 'none' }}
+                        aria-label={`${label}${s.status === 'locked' ? ', verrouillé' : s.status === 'done' ? ', terminé' : ''}`}
+                        onClick={() => (s.status === 'locked' ? setSheet({ view: v, step: s }) : navigate(stepPath(s)))}
+                      >
+                        {nextHere && <span className="node-ring" />}
+                        <StepIcon s={s} />
+                      </button>
+                      <span className="node-label">
+                        {label}
+                        {s.kind === 'challenge' && s.score !== undefined && s.status !== 'done' && <><br />meilleur : {Math.round(s.score * 100)} %</>}
                       </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        ));
+                      {nextHere && (
+                        <span className="path-mascot" style={offset >= 0 ? { right: 'calc(100% + 18px)' } : { left: 'calc(100% + 18px)' }}>
+                          <Mascot mood="happy" size={78} />
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        });
       })}
+
+      {sheet && <LockedSheet sheet={sheet} onClose={() => setSheet(null)} />}
     </div>
+  );
+}
+
+function LockedSheet({ sheet, onClose }: { sheet: Sheet; onClose: () => void }) {
+  const { view, step } = sheet;
+  const lessons = view.steps.filter((s) => s.kind === 'lesson');
+  const done = lessons.filter((s) => s.status === 'done' || s.status === 'consolidate').length;
+  let title = 'Unité verrouillée';
+  let text = 'Réussis le défi de l’unité précédente pour l’ouvrir. Tu connais déjà ces notions ? Saute jusqu’ici en réussissant son défi.';
+  if (view.unlocked && step.kind === 'practice') {
+    title = 'Encore un peu de chemin';
+    text = `Termine d’abord les leçons de l’unité (${done} / ${lessons.length}). L’entraînement mélange ensuite toutes leurs notions.`;
+  } else if (view.unlocked && step.kind === 'challenge') {
+    title = 'Le défi se mérite';
+    text = 'Fais d’abord l’entraînement de l’unité : c’est lui qui te prépare au défi.';
+  }
+  return (
+    <>
+      <div className="sheet-backdrop" onClick={onClose} />
+      <div className="sheet" role="dialog" aria-label={title}>
+        <div className="sheet-inner">
+          <div className="row">
+            <span className="icon-tile tone-primary"><LockIcon /></span>
+            <h3 className="grow">{title}</h3>
+          </div>
+          <p className="small">{text}</p>
+          {!view.unlocked && (
+            <Link className="btn sun" to={`/unit/${view.unit.id}/challenge?jump=1`}><TargetIcon />Sauter jusqu’ici</Link>
+          )}
+          <button className="btn secondary" onClick={onClose}>Compris</button>
+        </div>
+      </div>
+    </>
   );
 }

@@ -1,5 +1,5 @@
 import { db, getSettings, type Attempt } from './db';
-import { EXERCISES_BY_KC, IRREGULAR_VERBS, VOCAB_A2, irregularById, vocabById, THEMES } from '../content';
+import { CHECKPOINTS, EXERCISES_BY_KC, IRREGULAR_VERBS, UNITS, VOCAB_A2, getLesson, irregularById, vocabById, THEMES } from '../content';
 import type { ErrorTag, Exercise, IrregularVerb, Lesson, VocabEntry } from '../content/types';
 import type { ExerciseResult } from '../core/exercise';
 import { cardId, isLearned, newCard, ratingFor, retrievability, review, State, type SrsCard, type SrsItemType } from '../core/srs';
@@ -8,8 +8,10 @@ import { EVIDENCE_LEVELS, evidenceOf, type Evidence } from '../core/evidence';
 import { irregularExercise, irregularModeFor, vocabExercise, vocabModeFor, type VocabMode } from '../core/generators';
 import { buildSession, type NewItem, type SessionItem } from '../core/session';
 import { persistentDifficulties, type PersistentDifficulty } from '../core/errors';
-import { planRetry } from '../core/retry';
+import { interleave, planRetry, reformat } from '../core/retry';
+import { seededShuffle } from '../core/exercise';
 import { dayKey } from '../core/dates';
+import { prioritizeByMotivation } from '../core/motivation';
 import type { Verdict } from '../core/grading';
 import { kcForError } from './replay';
 import { resolveExercise, vocabAttemptInfo } from './meta';
@@ -262,7 +264,7 @@ export async function prepareSession(focus: Focus, budgetSeconds: number): Promi
 
   const newWords: NewItem[] =
     focus === 'all' || focus === 'vocab'
-      ? VOCAB_A2.filter((v) => !known.has(cardId('vocab', v.id)))
+      ? prioritizeByMotivation(VOCAB_A2, settings.motivations).filter((v) => !known.has(cardId('vocab', v.id)))
           .slice(0, Math.max(0, (focus === 'vocab' ? settings.newWordsPerDay * 2 : settings.newWordsPerDay) - today.vocab))
           .map((v) => ({ cardId: cardId('vocab', v.id), intro: vocabIntro(v), exercise: vocabExercise(v, VOCAB_A2, 'en_fr', seed) }))
       : [];
@@ -313,6 +315,45 @@ export async function lessonRecap(lesson: Lesson): Promise<SessionItem[]> {
   const exclude = new Set(lesson.exercises.map((e) => e.id));
   const recap = await prepareRecap(3, exclude, settings.speakingEnabled);
   return recap.map((exercise) => ({ kind: 'exercise', exercise, source: 'recap' }));
+}
+
+// ───────────── Étapes d'unité ─────────────
+
+const PRACTICE_SIZE = 12;
+
+/**
+ * Entraînement de fin d'unité : toutes les notions de l'unité, mélangées (pratique entrelacée),
+ * en visant le rappel et la production plutôt que la reconnaissance. Les exercices les moins
+ * récemment vus passent en premier ; un QCM à trou revient sous forme de réponse tapée.
+ */
+export async function prepareUnitPractice(unitId: string): Promise<SessionItem[]> {
+  const unit = UNITS.find((u) => u.id === unitId);
+  if (!unit) return [];
+  const { speakingEnabled: speaking } = await getSettings();
+  const seen = await seenMap();
+  const kcs = [...new Set(unit.lessonIds.flatMap((id) => getLesson(id)?.kcIds ?? []))];
+  const perKc = Math.max(2, Math.ceil(PRACTICE_SIZE / Math.max(1, kcs.length)));
+  const picked: Exercise[] = [];
+  const used = new Set<string>();
+  for (const kc of kcs) {
+    const pool = pickForKc(kc, seen, 'production', speaking).filter((e) => !used.has(e.id));
+    for (const e of pool.slice(0, perKc)) {
+      const harder = e.type === 'mcq' ? reformat(e) : undefined;
+      const ex = harder ?? e;
+      used.add(e.id);
+      picked.push(ex);
+    }
+  }
+  const seed = `${unitId}-${Date.now()}`;
+  const ordered = interleave(seededShuffle(picked, seed), (e) => e.kcIds[0]).slice(0, PRACTICE_SIZE);
+  return ordered.map((exercise) => ({ kind: 'exercise', exercise, source: 'lesson' }));
+}
+
+/** Défi d'unité : items d'évaluation inédits (jamais vus en pratique), ordre mélangé à chaque passage. */
+export async function prepareChallenge(unitId: string): Promise<SessionItem[]> {
+  const { speakingEnabled: speaking } = await getSettings();
+  const items = (CHECKPOINTS[unitId] ?? []).filter((e) => speaking || e.type !== 'speak');
+  return seededShuffle(items, `${unitId}-${Date.now()}`).map((exercise) => ({ kind: 'exercise', exercise, source: 'lesson' }));
 }
 
 // ───────────── Statistiques ─────────────

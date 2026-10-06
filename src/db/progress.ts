@@ -1,5 +1,5 @@
 import { db, type Attempt } from './db';
-import { PATH, getExercise } from '../content';
+import { getExercise } from '../content';
 import { addActivity } from './activity';
 
 export async function recordAttempt(a: Omit<Attempt, 'id'>): Promise<void> {
@@ -16,14 +16,6 @@ export async function completeLesson(lessonId: string, score: number, xp: number
     lastAt: Date.now(),
   });
   await addActivity(0, xp);
-}
-
-/** Prochaine leçon du parcours : la première non terminée, sinon la moins bien réussie. */
-export async function nextLessonId(): Promise<string> {
-  const progress = new Map((await db.lessonProgress.toArray()).map((p) => [p.lessonId, p]));
-  const pending = PATH.find((id) => progress.get(id)?.status !== 'completed');
-  if (pending) return pending;
-  return [...PATH].sort((a, b) => (progress.get(a)?.bestScore ?? 0) - (progress.get(b)?.bestScore ?? 0))[0];
 }
 
 /** Précision par compétence sur les 30 derniers jours (null si pas assez de données). */

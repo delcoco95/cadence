@@ -61,6 +61,14 @@ export function PracticeHub() {
         </Link>
       </div>
 
+      <Link to="/placement" className="card list-link" style={{ padding: 16 }}>
+        <span className="icon-tile tone-sun"><TargetIcon /></span>
+        <span className="grow">
+          <b style={{ display: 'block' }}>Test de niveau</b>
+          <span className="note">Mesure ta progression sur l’échelle CECRL, quand tu veux.</span>
+        </span>
+      </Link>
+
       {stats && stats.retention !== null && (
         <section className="card list-link" style={{ padding: 16 }}>
           <span className="icon-tile tone-primary"><ChartIcon /></span>

@@ -66,6 +66,8 @@ interface ExerciseBase {
 
 export interface McqExercise extends ExerciseBase {
   type: 'mcq';
+  /** Texte à lire avant la question (compréhension écrite) */
+  passage?: string;
   question: string;
   options: string[];
   /** Index de la bonne option */

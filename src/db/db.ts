@@ -8,6 +8,8 @@ import type { ErrorTag } from '../content/types';
 import { replayAttempts } from './replay';
 import type { Gender } from '../core/gender';
 import type { VoiceGenderPref } from '../speech/voices';
+import type { UnitRecord } from '../core/units';
+import type { PlacementBand, PlacementResponse, PlacementResult } from '../core/placement';
 
 export type ThemePref = 'system' | 'light' | 'dark';
 export type Accent = 'en-US' | 'en-GB' | 'en-AU';
@@ -25,9 +27,14 @@ export interface Settings {
   firstName: string;
   /** Accord des textes français : « prête » / « prêt » / « prêt·e » */
   gender: Gender;
+  /** Objectifs choisis à l'inscription (1 à 3) : ils orientent le vocabulaire et les phrases utiles */
+  motivations: Motivation[];
+  /** Ancien réglage (un seul objectif), repris dans motivations */
   motivation?: Motivation;
   dailyGoalMinutes: number;
   startLevel: Cefr;
+  /** Niveau estimé par le dernier test de placement */
+  estimatedBand?: PlacementBand;
   /** L'utilisateur veut bloquer ses apps via Raccourcis */
   blockingEnabled: boolean;
   /** Guide Raccourcis terminé */
@@ -78,7 +85,7 @@ export interface Attempt {
   /** 1 deviné · 2 pas sûr · 3 plutôt sûr · 4 certain */
   confidence?: 1 | 2 | 3 | 4;
   errorTags?: ErrorTag[];
-  context: 'lesson' | 'review' | 'drill' | 'new' | 'recap' | 'retry' | 'placement';
+  context: 'lesson' | 'review' | 'drill' | 'new' | 'recap' | 'retry' | 'placement' | 'checkpoint';
 }
 
 export interface LessonProgress {
@@ -89,6 +96,16 @@ export interface LessonProgress {
   lastAt: number;
 }
 
+export interface PlacementRecord {
+  id?: number;
+  kind: 'placement';
+  at: number;
+  result: PlacementResult;
+  responses: PlacementResponse[];
+  /** Dispense d'unités acceptée par l'apprenant */
+  applied: boolean;
+}
+
 export const db = new Dexie('cadence') as Dexie & {
   settings: EntityTable<Settings, 'id'>;
   dailyActivity: EntityTable<DailyActivity, 'date'>;
@@ -97,6 +114,8 @@ export const db = new Dexie('cadence') as Dexie & {
   srsCards: EntityTable<SrsCard, 'id'>;
   kcEvidence: EntityTable<KcMastery, 'kcId'>;
   errorEvents: EntityTable<ErrorEvent, 'id'>;
+  unitProgress: EntityTable<UnitRecord, 'unitId'>;
+  assessments: EntityTable<PlacementRecord, 'id'>;
 };
 
 db.version(1).stores({
@@ -127,11 +146,18 @@ db.version(3)
     await tx.table('errorEvents').bulkAdd(errors);
   });
 
+// v4 : étapes d'unité (entraînement, défi) et résultats du test de niveau
+db.version(4).stores({
+  unitProgress: 'unitId',
+  assessments: '++id, kind, at',
+});
+
 export const DEFAULT_SETTINGS: Settings = {
   id: 'me',
   onboarded: false,
   firstName: '',
   gender: 'n',
+  motivations: [],
   dailyGoalMinutes: 5,
   startLevel: 'A2',
   blockingEnabled: false,
@@ -152,7 +178,11 @@ export async function getSettings(): Promise<Settings> {
   // Fusion avec les valeurs par défaut : les réglages créés par une version antérieure n'ont pas les nouveaux champs.
   const stored = await db.settings.get('me');
   const merged = { ...DEFAULT_SETTINGS, ...(stored ?? { createdAt: Date.now() }) };
-  return { ...merged, voiceId: merged.voiceId ?? merged.voiceName };
+  return {
+    ...merged,
+    voiceId: merged.voiceId ?? merged.voiceName,
+    motivations: merged.motivations.length ? merged.motivations : merged.motivation ? [merged.motivation] : [],
+  };
 }
 
 export async function updateSettings(patch: Partial<Omit<Settings, 'id'>>): Promise<void> {

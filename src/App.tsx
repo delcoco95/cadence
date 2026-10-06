@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
-import { HashRouter, NavLink, Route, Routes, useParams } from 'react-router-dom';
+import { HashRouter, NavLink, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { useSettings } from './db/hooks';
 import { Onboarding } from './features/onboarding/Onboarding';
 import { Home } from './features/home/Home';
@@ -10,6 +10,8 @@ import { FocusScreen } from './features/focus/FocusScreen';
 import { PracticePlayer } from './features/practice/PracticePlayer';
 import { PracticeHub } from './features/practice/PracticeHub';
 import { ProgressScreen } from './features/progress/ProgressScreen';
+import { PlacementTest } from './features/placement/PlacementTest';
+import { UnitStepPlayer } from './features/unit/UnitStepPlayer';
 import { DumbbellIcon, HomeIcon, PathIcon, ProfileIcon } from './ui/Icons';
 import { setSoundEnabled } from './ui/sfx';
 
@@ -48,6 +50,13 @@ function PracticeRoute() {
   return <PracticePlayer key={focus} />;
 }
 
+/** La clé de navigation remonte l'étape à chaque nouvel essai (retenter un défi). */
+function UnitRoute() {
+  const location = useLocation();
+  // L'étape (entraînement, défi) fait partie de la clé : la clé de navigation seule ne change pas toujours.
+  return <UnitStepPlayer key={`${location.pathname}${location.search}-${location.key}`} />;
+}
+
 export function App() {
   const settings = useSettings();
 
@@ -75,6 +84,8 @@ export function App() {
         <Route path="/focus" element={<FocusScreen />} />
         <Route path="/progress" element={<ProgressScreen />} />
         <Route path="/practice/:focus" element={<PracticeRoute />} />
+        <Route path="/unit/:unitId/:kind" element={<UnitRoute />} />
+        <Route path="/placement" element={<PlacementTest />} />
         <Route path="*" element={<WithTabs><Home /></WithTabs>} />
       </Routes>
     </HashRouter>

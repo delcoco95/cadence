@@ -7,11 +7,12 @@ import { isIOS, isStandalone } from '../focus/shortcuts';
 import { GENDER_OPTIONS, GOAL_OPTIONS } from '../profile/Profile';
 import { VoicePicker } from '../profile/VoicePicker';
 import { Mascot, MascotSays } from '../../ui/Mascot';
-import { MOTIVATIONS } from '../../ui/profile';
+import { MOTIVATIONS, MAX_MOTIVATIONS } from '../../ui/profile';
+import { applyChosenLevel, LEVEL_CHOICES, type LevelChoice } from '../../db/units';
 import { ProgressBar } from '../../ui/ProgressBar';
 import { sfx } from '../../ui/sfx';
 import {
-  BackIcon, BrainIcon, BriefcaseIcon, CapIcon, ChatIcon, FilmIcon, LockIcon, PlaneIcon, ProfileIcon, StarIcon,
+  BackIcon, BrainIcon, BriefcaseIcon, CapIcon, ChatIcon, CheckIcon, FilmIcon, PlaneIcon, ProfileIcon, SparkleIcon, TargetIcon,
 } from '../../ui/Icons';
 
 type Step = 'welcome' | 'name' | 'gender' | 'motivation' | 'install' | 'level' | 'goal' | 'voice' | 'blocking' | 'guide';
@@ -35,8 +36,9 @@ export function Onboarding() {
   const [step, setStep] = useState<Step>('welcome');
   const [firstName, setFirstName] = useState('');
   const [gender, setGender] = useState<Gender | null>(null);
-  const [motivation, setMotivation] = useState<Motivation | null>(null);
+  const [motivations, setMotivations] = useState<Motivation[]>([]);
   const [goal, setGoal] = useState(10);
+  const [level, setLevel] = useState<LevelChoice | null>(null);
   const [voice, setVoice] = useState<VoiceSettings>({
     accent: DEFAULT_SETTINGS.accent,
     voiceId: undefined,
@@ -54,19 +56,21 @@ export function Onboarding() {
   const back = () => setStep(step === 'guide' ? 'blocking' : flow[Math.max(0, index - 1)]);
 
   async function finish(patch: { blockingEnabled: boolean; blockingSetupDone: boolean }) {
+    // Le routeur lit l'adresse à son montage, juste après l'onboarding : le test s'ouvre directement.
+    if (level === 'test') window.location.hash = '#/placement';
     await requestPersistentStorage();
     await updateSettings({
       ...patch,
       ...voice,
       firstName: name,
       gender: gender ?? 'n',
-      motivation: motivation ?? undefined,
+      motivations,
       dailyGoalMinutes: goal,
-      startLevel: 'A2',
       onboarded: true,
       createdAt: Date.now(),
     });
     await applyGoalToToday(goal);
+    if (level && level !== 'test') await applyChosenLevel(level);
     sfx.complete();
   }
 
@@ -146,24 +150,32 @@ export function Onboarding() {
 
       {step === 'motivation' && (
         <div className="ob-body top">
-          <MascotSays mood="happy">Pourquoi veux-tu apprendre l’anglais ?</MascotSays>
+          <MascotSays mood="happy">Pourquoi veux-tu apprendre l’anglais ? Choisis jusqu’à {MAX_MOTIVATIONS} objectifs : j’adapterai tes cours.</MascotSays>
           <div className="choice-grid">
-            {(Object.keys(MOTIVATIONS) as Motivation[]).map((m) => (
-              <button
-                key={m}
-                className={`choice${motivation === m ? ' selected' : ''}`}
-                onClick={() => {
-                  sfx.tap();
-                  setMotivation(m);
-                }}
-              >
-                <span className={`icon-tile ${MOTIVATION_ICONS[m].tone}`}>{MOTIVATION_ICONS[m].icon}</span>
-                {MOTIVATIONS[m].label}
-              </button>
-            ))}
+            {(Object.keys(MOTIVATIONS) as Motivation[]).map((m) => {
+              const on = motivations.includes(m);
+              const full = !on && motivations.length >= MAX_MOTIVATIONS;
+              return (
+                <button
+                  key={m}
+                  className={`choice${on ? ' selected' : ''}`}
+                  aria-pressed={on}
+                  disabled={full}
+                  style={full ? { opacity: 0.5 } : undefined}
+                  onClick={() => {
+                    sfx.tap();
+                    setMotivations((list) => (on ? list.filter((x) => x !== m) : [...list, m]));
+                  }}
+                >
+                  <span className={`icon-tile ${MOTIVATION_ICONS[m].tone}`}>{on ? <CheckIcon /> : MOTIVATION_ICONS[m].icon}</span>
+                  {MOTIVATIONS[m].label}
+                </button>
+              );
+            })}
           </div>
+          <p className="note center">{motivations.length} / {MAX_MOTIVATIONS} choisi{motivations.length > 1 ? 's' : ''}</p>
           <div className="bottom-action">
-            <button className="btn" disabled={!motivation} onClick={next}>Continuer</button>
+            <button className="btn" disabled={motivations.length === 0} onClick={next}>Continuer</button>
           </div>
         </div>
       )}
@@ -189,22 +201,30 @@ export function Onboarding() {
 
       {step === 'level' && (
         <div className="ob-body top">
-          <MascotSays mood="think">On commence par où ?</MascotSays>
+          <MascotSays mood="think">Quel est ton niveau d’anglais ? Pas sûr ? Le test le trouve pour toi.</MascotSays>
           <div className="stack" style={{ gap: 10 }}>
-            <button className="choice wide selected" onClick={next}>
-              <span className="icon-tile tone-success"><StarIcon /></span>
-              <span className="grow">
-                Commencer au niveau A2
-                <span className="note" style={{ display: 'block', fontWeight: 600 }}>Bases solides : présent, passé, questions…</span>
-              </span>
-            </button>
-            <button className="choice wide" disabled style={{ opacity: 0.55 }}>
-              <span className="icon-tile" style={{ background: 'var(--surface-2)', color: 'var(--muted)' }}><LockIcon /></span>
-              <span className="grow">
-                Passer le test de niveau
-                <span className="note" style={{ display: 'block', fontWeight: 600 }}>Bientôt disponible</span>
-              </span>
-            </button>
+            {LEVEL_CHOICES.map((c) => (
+              <button
+                key={c.value}
+                className={`choice wide${level === c.value ? ' selected' : ''}`}
+                onClick={() => {
+                  sfx.tap();
+                  setLevel(c.value);
+                }}
+              >
+                <span className={`icon-tile ${c.tone}`}>{c.value === 'test' ? <TargetIcon /> : <b style={{ fontSize: 15 }}>{c.value}</b>}</span>
+                <span className="grow">
+                  {c.label}
+                  <span className="note" style={{ display: 'block', fontWeight: 600 }}>{c.hint}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+          {(level === 'B1' || level === 'B2') && (
+            <p className="tip"><SparkleIcon />Le parcours B1 et B2 est en préparation. En attendant, tout le niveau A2 sera ouvert : révise à ton rythme et teste-toi avec les défis.</p>
+          )}
+          <div className="bottom-action">
+            <button className="btn" disabled={!level} onClick={next}>Continuer</button>
           </div>
         </div>
       )}
@@ -212,7 +232,7 @@ export function Onboarding() {
       {step === 'goal' && (
         <div className="ob-body top">
           <MascotSays mood="happy">
-            {motivation ? `Super, ${MOTIVATIONS[motivation].line} ! ` : ''}Combien de temps par jour ?
+            {motivations.length ? `Super, ${MOTIVATIONS[motivations[0]].line} ! ` : ''}Combien de temps par jour ?
           </MascotSays>
           <div className="stack" style={{ gap: 8 }}>
             {GOAL_OPTIONS.map((m) => (

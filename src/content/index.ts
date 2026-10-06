@@ -8,6 +8,7 @@ import { comparatives, quantities } from './a2/compare-quantities';
 import { canCould, obligation, prepositionsTime } from './a2/modals-prepositions';
 import { VOCAB_A2, THEMES } from './vocab/a2';
 import { IRREGULAR_VERBS } from './vocab/irregular';
+import { CHECKPOINTS, CAN_DO } from './a2/checkpoints';
 
 export { VOCAB_A2, THEMES, IRREGULAR_VERBS };
 
@@ -64,6 +65,11 @@ export const UNITS: Unit[] = [
     description: 'in / on / at pour le temps et le lieu.', lessonIds: ['a2-prep-1'],
   },
 ];
+
+for (const u of UNITS) u.canDo ??= CAN_DO[u.id];
+
+export { CHECKPOINTS };
+export const checkpointById = new Map<string, Exercise>(Object.values(CHECKPOINTS).flatMap((list) => list.map((e) => [e.id, e] as const)));
 
 const lessonById = new Map(LESSONS.map((l) => [l.id, l]));
 const exerciseById = new Map<string, Exercise>(LESSONS.flatMap((l) => l.exercises.map((e) => [e.id, e] as const)));

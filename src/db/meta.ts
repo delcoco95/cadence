@@ -1,4 +1,4 @@
-import { getExercise, irregularById, vocabById, VOCAB_A2, IRREGULAR_VERBS } from '../content';
+import { checkpointById, getExercise, irregularById, vocabById, VOCAB_A2, IRREGULAR_VERBS } from '../content';
 import type { Exercise } from '../content/types';
 import { irregularExercise, vocabExercise, type IrregularMode, type VocabMode } from '../core/generators';
 import { reformat } from '../core/retry';
@@ -17,7 +17,8 @@ const IRR_MODES: Record<string, IrregularMode> = { past: 'past', pp: 'participle
 
 /**
  * Retrouve un exercice à partir de son identifiant, y compris les exercices générés
- * (gen-v-<mot>-<mode>, gen-irr-<verbe>-<mode>) et reformatés (<id>~recall).
+ * (gen-v-<mot>-<mode>, gen-irr-<verbe>-<mode>), reformatés (<id>~recall) et des défis d'unité.
+ * Les items du test de placement ne sont volontairement pas résolus : ils ne nourrissent pas la maîtrise.
  * Les QCM générés sont reconstruits avec un ordre d'options neutre.
  */
 export function resolveExercise(id: string): Exercise | undefined {
@@ -25,7 +26,7 @@ export function resolveExercise(id: string): Exercise | undefined {
     const original = resolveExercise(id.slice(0, -'~recall'.length));
     return original && reformat(original);
   }
-  const lesson = getExercise(id);
+  const lesson = getExercise(id) ?? checkpointById.get(id);
   if (lesson) return lesson;
   if (id.startsWith('gen-v-')) {
     const rest = id.slice('gen-v-'.length);

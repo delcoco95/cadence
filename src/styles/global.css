@@ -709,3 +709,47 @@ code, .kbd { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 
 .badge .bar { width: 64px; height: 6px; }
 .badge .bar > i::after { display: none; }
 .group-title { margin: 6px 4px -6px; }
+
+/* ───────────── Lecture, test de niveau, défis ───────────── */
+.passage {
+  padding: 16px; border-radius: 16px; background: var(--surface);
+  border: 2px solid var(--border); border-left: 6px solid var(--sky);
+  font-size: 17px; font-weight: 600; line-height: 1.5; white-space: pre-line;
+}
+.section-card { display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; padding: 28px 20px; }
+.section-dots { display: flex; gap: 6px; }
+.section-dots i { width: 28px; height: 8px; border-radius: 4px; background: var(--surface-2); }
+.section-dots i.on { background: var(--primary); }
+.band-reveal {
+  display: grid; place-items: center; width: 150px; height: 150px; border-radius: 50%;
+  background: var(--primary); color: #fff; box-shadow: 0 7px 0 var(--primary-dark);
+  font-size: 54px; font-weight: 900; letter-spacing: -0.02em;
+  animation: pop 0.6s cubic-bezier(.2,.9,.3,1.4) both;
+}
+.band-reveal small { display: block; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85; margin-top: -26px; }
+.skill-row { display: grid; grid-template-columns: 96px 1fr 44px; align-items: center; gap: 10px; }
+.skill-row b { font-size: 15px; }
+.skill-row span { font-weight: 900; text-align: right; color: var(--primary); }
+.scale { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; color: var(--muted); padding-left: 106px; padding-right: 54px; }
+.can-do { display: flex; gap: 10px; align-items: flex-start; font-weight: 700; }
+.can-do svg { width: 22px; height: 22px; flex: none; color: var(--success); margin-top: 1px; }
+.node.practice { --node: var(--teal); }
+.node.challenge { width: 86px; height: 80px; --node: var(--sun); }
+.node.challenge svg { width: 40px; height: 40px; }
+.node.locked { --node: var(--surface-2); color: var(--muted); box-shadow: 0 7px 0 var(--border); }
+.node.done.practice { --node: var(--teal); }
+.node.done.challenge { --node: var(--sun); }
+.unit.locked .unit-banner { background: var(--surface-2); color: var(--muted); box-shadow: 0 4px 0 var(--border); }
+.unit.locked .unit-banner .icon-tile { background: var(--surface); color: var(--muted); }
+.sheet-backdrop { position: fixed; inset: 0; z-index: 40; background: rgb(10 8 30 / 0.45); animation: fade-in 0.2s both; }
+.sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 41;
+  padding: 22px 16px calc(var(--safe-bottom) + 16px);
+  background: var(--surface); border-radius: 24px 24px 0 0;
+  animation: slide-up 0.25s cubic-bezier(.2,.9,.3,1.1);
+}
+.sheet-inner { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+.score-meter { position: relative; }
+.score-meter .mark { position: absolute; top: -4px; bottom: -4px; width: 3px; border-radius: 2px; background: var(--text); }
+.node-wrap.has-tip { margin-top: 38px; }
+.node-tip { z-index: 2; }

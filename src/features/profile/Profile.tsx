@@ -1,7 +1,8 @@
 import { useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, updateSettings, type ThemePref } from '../../db/db';
+import { db, updateSettings, type Motivation, type ThemePref } from '../../db/db';
+import { MAX_MOTIVATIONS, MOTIVATIONS } from '../../ui/profile';
 import { applyGoalToToday, loadStats } from '../../db/activity';
 import { exportBackup, importBackup } from '../../db/backup';
 import { learningStats } from '../../db/learning';
@@ -98,7 +99,12 @@ export function Profile() {
         <div className="avatar" aria-hidden="true">{(displayName[0] ?? 'C').toUpperCase()}</div>
         <div className="grow">
           <h1 style={{ fontSize: 26 }}>{displayName || 'Mon profil'}</h1>
-          <p className="small muted" style={{ fontWeight: 700 }}>Niveau {settings.startLevel} · depuis {since}</p>
+          <p className="small muted" style={{ fontWeight: 700 }}>
+            {settings.estimatedBand ? `Niveau estimé ${settings.estimatedBand}` : `Niveau ${settings.startLevel}`} · depuis {since}
+          </p>
+          <Link to="/placement" className="chip primary" style={{ textDecoration: 'none', marginTop: 6 }}>
+            {settings.estimatedBand ? 'Refaire le test de niveau' : 'Passer le test de niveau'}
+          </Link>
         </div>
       </header>
 
@@ -159,6 +165,32 @@ export function Profile() {
               <span className="note">{g.example}</span>
             </button>
           ))}
+        </div>
+        <div className="stack" style={{ gap: 8 }}>
+          <span className="tiny muted">Mes objectifs (jusqu’à {MAX_MOTIVATIONS}) : ils orientent le vocabulaire</span>
+          <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
+            {(Object.keys(MOTIVATIONS) as Motivation[]).map((m) => {
+              const on = settings.motivations.includes(m);
+              const full = !on && settings.motivations.length >= MAX_MOTIVATIONS;
+              return (
+                <button
+                  key={m}
+                  className={`option${on ? ' selected' : ''}`}
+                  style={{ width: 'auto', minHeight: 44, padding: '8px 14px', fontSize: 15, opacity: full ? 0.5 : 1 }}
+                  aria-pressed={on}
+                  disabled={full}
+                  onClick={() =>
+                    void updateSettings({
+                      motivations: on ? settings.motivations.filter((x) => x !== m) : [...settings.motivations, m],
+                      motivation: undefined,
+                    })
+                  }
+                >
+                  {MOTIVATIONS[m].label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </section>
 

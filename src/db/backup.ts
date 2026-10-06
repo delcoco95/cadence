@@ -1,6 +1,9 @@
 import { db } from './db';
 
-const TABLES = ['settings', 'dailyActivity', 'attempts', 'lessonProgress', 'srsCards', 'kcMastery'] as const;
+// kcMastery a été remplacée par kcEvidence (v3) : l'exporter faisait échouer la sauvegarde.
+const TABLES = [
+  'settings', 'dailyActivity', 'attempts', 'lessonProgress', 'srsCards', 'kcEvidence', 'errorEvents', 'unitProgress', 'assessments',
+] as const;
 
 export async function exportBackup(): Promise<Blob> {
   const data: Record<string, unknown[]> = {};

@@ -1,9 +1,9 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
-import { getLesson } from '../../content';
+import { getLesson, UNITS } from '../../content';
 import { lessonsDoneToday, loadStats, weekActivity } from '../../db/activity';
 import { useSettings, useToday } from '../../db/hooks';
-import { nextLessonId } from '../../db/progress';
+import { nextStep, stepPath } from '../../db/units';
 import { ERROR_LABELS } from '../../core/errors';
 import { learningStats } from '../../db/learning';
 import { kcLabel } from '../../content/kcs';
@@ -12,9 +12,9 @@ import { ProgressBar } from '../../ui/ProgressBar';
 import { Ring } from '../../ui/Ring';
 import { MascotSays } from '../../ui/Mascot';
 import { hello, homeLine, useProfileText } from '../../ui/profile';
-import { unitOfLesson, unitStyle } from '../../ui/units';
+import { unitStyle } from '../../ui/units';
 import {
-  BoltIcon, BookIcon, BrainIcon, CheckIcon, ChevronIcon, FlameIcon, LetterIcon, RefreshIcon, StarIcon, TargetIcon, TrophyIcon,
+  BoltIcon, BookIcon, BrainIcon, CheckIcon, ChevronIcon, DumbbellIcon, FlameIcon, LetterIcon, RefreshIcon, StarIcon, TargetIcon, TrophyIcon,
 } from '../../ui/Icons';
 import { UnlockCard } from '../focus/UnlockCard';
 
@@ -26,11 +26,12 @@ export function Home() {
   const stats = useLiveQuery(() => loadStats());
   const week = useLiveQuery(() => weekActivity());
   const lessonsToday = useLiveQuery(() => lessonsDoneToday());
-  const nextId = useLiveQuery(() => nextLessonId());
+  const step = useLiveQuery(() => nextStep());
   const learning = useLiveQuery(() => learningStats());
   const p = useProfileText();
-  const lesson = nextId ? getLesson(nextId) : undefined;
-  const unit = nextId ? unitOfLesson(nextId) : undefined;
+  const lesson = step?.kind === 'lesson' ? getLesson(step.lessonId!) : undefined;
+  const unit = step ? UNITS.find((u) => u.id === step.unitId) : undefined;
+  const unitNumber = unit ? UNITS.indexOf(unit) + 1 : 0;
 
   const goalMinutes = settings?.dailyGoalMinutes ?? 5;
   const goalSeconds = today?.goalSeconds ?? goalMinutes * 60;
@@ -53,7 +54,7 @@ export function Home() {
   return (
     <div className="screen">
       <header className="topbar">
-        <span className="pill level">{settings?.startLevel ?? 'A2'}</span>
+        <span className="pill level">{settings?.estimatedBand ?? settings?.startLevel ?? 'A2'}</span>
         <div className="pills">
           <span className={`pill flame${stats?.streak.todayDone ? '' : ' off'}`} aria-label={`Série de ${streak} jours`}>
             <FlameIcon /> {streak}
@@ -100,17 +101,40 @@ export function Home() {
 
       <UnlockCard />
 
-      {lesson && (
-        <section className="cta-card" style={unit ? unitStyle(unit.id) : undefined}>
-          <p className="tiny">{unit ? `${unit.title} · ` : ''}{lesson.cefr}</p>
-          <div className="stack" style={{ gap: 4 }}>
-            <h2>{lesson.title}</h2>
-            <p>{lesson.subtitle} · {lesson.estMinutes} min</p>
-          </div>
-          <Link className="btn white" to={`/lesson/${lesson.id}`}>
-            {goalMet ? 'Continuer à apprendre' : lessonStarted ? 'Leçon suivante' : 'C’est parti !'}
+      {step && unit && (
+        <section className="cta-card" style={unitStyle(unit.id)}>
+          <p className="tiny">Unité {unitNumber} · {unit.title}</p>
+          {step.kind === 'lesson' && lesson ? (
+            <div className="stack" style={{ gap: 4 }}>
+              <h2>{lesson.title}</h2>
+              <p>{lesson.subtitle} · {lesson.estMinutes} min</p>
+            </div>
+          ) : (
+            <div className="row">
+              <span className="icon-tile" style={{ background: 'rgb(255 255 255 / .2)', color: '#fff' }}>
+                {step.kind === 'challenge' ? <TrophyIcon /> : <DumbbellIcon />}
+              </span>
+              <div className="stack grow" style={{ gap: 2 }}>
+                <h2>{step.kind === 'challenge' ? 'Défi de l’unité' : 'Entraînement'}</h2>
+                <p>{step.kind === 'challenge' ? 'Réussis-le pour débloquer l’unité suivante.' : 'Toutes les notions de l’unité, mélangées.'}</p>
+              </div>
+            </div>
+          )}
+          <Link className="btn white" to={stepPath(step)}>
+            {step.kind === 'challenge' ? 'Relever le défi' : goalMet ? 'Continuer à apprendre' : lessonStarted ? 'Étape suivante' : 'C’est parti !'}
           </Link>
         </section>
+      )}
+
+      {settings && !settings.estimatedBand && (
+        <Link to="/placement" className="card list-link" style={{ padding: 16 }}>
+          <span className="icon-tile tone-sun"><TargetIcon /></span>
+          <span className="grow">
+            <b style={{ display: 'block' }}>Passe le test de niveau</b>
+            <span className="note">10 minutes pour connaître ton niveau et sauter ce que tu sais déjà.</span>
+          </span>
+          <ChevronIcon />
+        </Link>
       )}
 
       <section className="card">

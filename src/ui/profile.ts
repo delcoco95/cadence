@@ -101,6 +101,8 @@ export function homeLine(p: ProfileText, state: { goalMet: boolean; started: boo
   );
 }
 
+export const MAX_MOTIVATIONS = 3;
+
 export const MOTIVATIONS: Record<Motivation, { label: string; line: string }> = {
   travel: { label: 'Voyager', line: 'pour voyager sans stress' },
   work: { label: 'Mon travail', line: 'pour être à l’aise au travail' },

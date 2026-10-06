@@ -2,7 +2,7 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useToday } from '../../db/hooks';
-import { nextLessonId } from '../../db/progress';
+import { nextStep, stepPath } from '../../db/units';
 import { ProgressBar } from '../../ui/ProgressBar';
 import { UnlockCard } from '../focus/UnlockCard';
 import { formatMinutes } from '../../ui/format';
@@ -42,7 +42,7 @@ function formatDuration(ms: number): string {
 
 export function SessionSummary({ title, summary, empty }: { title: string; summary: RunSummary; empty?: boolean }) {
   const today = useToday();
-  const nextId = useLiveQuery(() => nextLessonId());
+  const next = useLiveQuery(() => nextStep());
   const p = useProfileText();
   const pct = Math.round(summary.score * 100);
   const xp = useCountUp(summary.xp);
@@ -98,10 +98,10 @@ export function SessionSummary({ title, summary, empty }: { title: string; summa
       )}
       <UnlockCard />
       <div className="bottom-action stack">
-        {nextId && (
+        {next && (
           // App.tsx remonte le lecteur (key = lessonId) : la leçon repart de zéro.
-          <Link className={`btn ${goalMet ? 'secondary' : ''}`} to={`/lesson/${nextId}`} replace>
-            Leçon suivante
+          <Link className={`btn ${goalMet ? 'secondary' : ''}`} to={stepPath(next)} replace>
+            {next.kind === 'challenge' ? 'Relever le défi' : next.kind === 'practice' ? 'Entraînement de l’unité' : 'Leçon suivante'}
           </Link>
         )}
         <Link className={`btn ${goalMet ? '' : 'secondary'}`} to="/" replace>Retour à l’accueil</Link>
