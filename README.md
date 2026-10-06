@@ -39,3 +39,19 @@ Les mises à jour s'installent toutes seules à la prochaine ouverture (service 
 
 Les leçons sont dans `src/content/<niveau>/*.ts` (types dans `src/content/types.ts`) et sont déclarées dans `src/content/index.ts`.
 `npm test` vérifie les identifiants uniques, les références entre unités et leçons, et que chaque réponse de référence est bien acceptée par le correcteur.
+
+## Voix (audio pré-généré)
+
+Les phrases sont lues par deux voix naturelles, **Lily** (féminine) et **Michael** (masculine), générées une fois pour toutes
+avec [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M) (modèle libre, licence Apache 2.0) : le son est identique sur tous les
+téléphones et fonctionne hors ligne. Les fichiers sont dans `public/audio/<voix>/<clé>.mp3`, la liste dans `public/audio/manifest.json`.
+Un texte sans fichier est lu par la synthèse vocale du téléphone.
+
+Après un ajout de contenu :
+
+```bash
+npm run voices
+```
+
+Le script recense les textes lus (`src/speech/corpus.ts`), ne génère que les nouveaux (reprise automatique) et met à jour le manifeste.
+La première fois, il télécharge le modèle (~90 Mo). Compter environ 2 s par phrase et par voix.

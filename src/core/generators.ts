@@ -1,5 +1,7 @@
 import type { Exercise, IrregularVerb, VocabEntry } from '../content/types';
 import { seededShuffle } from './exercise';
+import type { IntroCard } from './session';
+import { THEMES } from '../content/vocab/a2';
 
 /** Exercices générés à partir des données (vocabulaire, verbes irréguliers) : pas de saisie à la main. */
 
@@ -98,7 +100,7 @@ const forms = (s: string) => s.split('/').map((f) => f.trim());
 export function irregularExercise(v: IrregularVerb, mode: IrregularMode): Exercise {
   const common = {
     cefr: v.cefr, skill: 'grammar' as const, kcIds: ['verbs.irregular'], tense: 'irregular',
-    speak: `${v.base}, ${v.past}, ${v.participle}`,
+    speak: `${v.base}, ${spoken(v.past)}, ${spoken(v.participle)}`,
     explanation: `${v.base} (${v.fr}) → ${v.past} → ${v.participle}`,
   };
   const pairs = (prefix = '') => forms(v.past).flatMap((p) => forms(v.participle).map((pp) => `${prefix}${p} ${pp}`));
@@ -128,3 +130,24 @@ export function irregularExercise(v: IrregularVerb, mode: IrregularMode): Exerci
       };
   }
 }
+
+/** Fiche de présentation d'un nouveau mot. */
+export const vocabIntro = (v: VocabEntry): IntroCard => ({
+  label: `Nouveau mot · ${THEMES[v.theme] ?? v.theme}`,
+  title: v.en,
+  subtitle: v.fr,
+  lines: v.example ? [{ en: v.example, fr: v.exampleFr }] : undefined,
+  speak: v.example ? `${v.en}. ${v.example}` : v.en,
+});
+
+/** « was/were » se lit « was or were » (sans espaces, la synthèse disait « wasorwere »). */
+const spoken = (forms: string) => forms.split('/').map((f) => f.trim()).join(' or ');
+
+/** Fiche de présentation d'un verbe irrégulier. */
+export const irregularIntro = (v: IrregularVerb): IntroCard => ({
+  label: 'Verbe irrégulier',
+  title: `${v.base} → ${v.past} → ${v.participle}`,
+  subtitle: v.fr,
+  lines: [{ en: `base : ${v.base}` }, { en: `past simple : ${v.past}` }, { en: `participe passé : ${v.participle}` }],
+  speak: `${v.base}, ${spoken(v.past)}, ${spoken(v.participle)}`,
+});

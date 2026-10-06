@@ -8,6 +8,7 @@ import type { ErrorTag } from '../content/types';
 import { replayAttempts } from './replay';
 import type { Gender } from '../core/gender';
 import type { VoiceGenderPref } from '../speech/voices';
+import type { CadenceVoice } from '../speech/audio';
 import type { UnitRecord } from '../core/units';
 import type { PlacementBand, PlacementResponse, PlacementResult } from '../core/placement';
 
@@ -16,6 +17,9 @@ export type Accent = 'en-US' | 'en-GB' | 'en-AU';
 export type Motivation = 'travel' | 'work' | 'studies' | 'culture' | 'people' | 'brain';
 
 export interface VoicePref {
+  /** cadence : audio pré-généré, identique partout ; device : synthèse du téléphone */
+  source?: 'cadence' | 'device';
+  cadence?: CadenceVoice;
   /** Identifiant de la voix choisie : voiceURI, ou nom pour les anciens réglages (absent : meilleure voix disponible) */
   id?: string;
   gender: VoiceGenderPref;
@@ -49,6 +53,9 @@ export interface Settings {
   /** Ancien réglage (nom de voix), repris dans voiceId */
   voiceName?: string;
   voiceGender: VoiceGenderPref;
+  /** Voix de Cadence (pré-générées) ou voix du téléphone */
+  voiceSource: 'cadence' | 'device';
+  cadenceVoice: CadenceVoice;
   /** Sons de réussite / d'erreur */
   soundEffects: boolean;
   /** Exercices oraux activés (micro) */
@@ -167,6 +174,8 @@ export const DEFAULT_SETTINGS: Settings = {
   accent: 'en-GB',
   speechRate: 0.9,
   voiceGender: 'any',
+  voiceSource: 'cadence',
+  cadenceVoice: 'female',
   soundEffects: true,
   speakingEnabled: true,
   newWordsPerDay: 8,
@@ -190,9 +199,11 @@ export async function updateSettings(patch: Partial<Omit<Settings, 'id'>>): Prom
   await db.settings.put({ ...current, ...patch, id: 'me' });
 }
 
-export const voicePref = (s: Pick<Settings, 'voiceId' | 'voiceGender'>): VoicePref => ({
+export const voicePref = (s: Pick<Settings, 'voiceId' | 'voiceGender' | 'voiceSource' | 'cadenceVoice'>): VoicePref => ({
   id: s.voiceId,
   gender: s.voiceGender,
+  source: s.voiceSource,
+  cadence: s.cadenceVoice,
 });
 
 /** Demande à Safari de ne pas effacer les données (PWA installée). */

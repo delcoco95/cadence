@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PLACEMENT_ITEMS, type PlacementExercise } from '../../content/placement';
 import { UNITS } from '../../content';
@@ -9,7 +9,7 @@ import {
 import { genderizeDeep } from '../../core/gender';
 import { useSettings } from '../../db/hooks';
 import { savePlacement } from '../../db/units';
-import { speak } from '../../speech/tts';
+import { useSpeaker } from '../../speech/useSpeaker';
 import { ExerciseView } from '../lesson/ExerciseView';
 import { useActiveTime } from '../lesson/useActiveTime';
 import { Mascot, MascotSays } from '../../ui/Mascot';
@@ -47,16 +47,7 @@ export function PlacementTest() {
   const [result, setResult] = useState<{ result: PlacementResult; id: number } | null>(null);
   const startedAt = useRef(Date.now());
 
-  const say = useCallback(
-    (text: string, slow?: boolean) => {
-      ping();
-      speak(text, settings?.accent ?? 'en-GB', {
-        rate: slow ? 0.6 : settings?.speechRate ?? 0.9,
-        voice: { id: settings?.voiceId, gender: settings?.voiceGender ?? 'any' },
-      });
-    },
-    [ping, settings?.accent, settings?.speechRate, settings?.voiceId, settings?.voiceGender],
-  );
+  const say = useSpeaker(ping);
 
   const pool = useMemo(() => PLACEMENT_ITEMS.map((e) => ({ ...e.placement, exercise: e })), []);
 
@@ -73,7 +64,7 @@ export function PlacementTest() {
   }
 
   async function finish(all: PlacementResponse[]) {
-    const r = placementResult(all, UNITS.map((u) => u.id));
+    const r = placementResult(all, UNITS);
     const id = await savePlacement(r, all);
     sfx.complete();
     setResult({ result: r, id });

@@ -15,6 +15,14 @@ export function unitStyle(unitId: string): CSSProperties {
   return { '--unit': `var(--${t})`, '--unit-dark': `var(--${t}-dark)`, '--unit-soft': `var(--${t}-soft)` } as CSSProperties;
 }
 
+/** « B1 · Unité 3 » : numéro de l'unité dans son niveau. */
+export function unitLabel(unitId: string): string {
+  const unit = UNITS.find((u) => u.id === unitId);
+  if (!unit) return '';
+  const n = UNITS.filter((u) => u.cefr === unit.cefr).indexOf(unit) + 1;
+  return `${unit.cefr} · Unité ${n}`;
+}
+
 export function unitOfLesson(lessonId: string) {
   return UNITS.find((u) => u.lessonIds.includes(lessonId));
 }

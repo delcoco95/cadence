@@ -2,11 +2,11 @@
  * npm run validate-content — validation pédagogique du contenu.
  * Code de sortie 1 s'il y a des erreurs (utilisable en CI).
  */
-import { LESSONS, UNITS, PATH, VOCAB_A2, IRREGULAR_VERBS } from '../src/content';
+import { LESSONS, UNITS, PATH, VOCAB, IRREGULAR_VERBS } from '../src/content';
 import { KCS } from '../src/content/kcs';
 import { validateContent, type Issue } from '../src/content/validate';
 
-const report = validateContent({ lessons: LESSONS, units: UNITS, kcs: KCS, vocab: VOCAB_A2, irregulars: IRREGULAR_VERBS, path: PATH });
+const report = validateContent({ lessons: LESSONS, units: UNITS, kcs: KCS, vocab: VOCAB, irregulars: IRREGULAR_VERBS, path: PATH });
 const errors = report.issues.filter((i) => i.level === 'error');
 const warnings = report.issues.filter((i) => i.level === 'warning');
 
@@ -19,7 +19,7 @@ const group = (list: Issue[]) => {
 
 console.log('\nValidation du contenu Cadence\n');
 console.log(`✓ ${report.validExercises} / ${report.exercises} exercices valides`);
-console.log(`  ${LESSONS.length} leçons · ${UNITS.length} unités · ${KCS.length} notions · ${VOCAB_A2.length} mots · ${IRREGULAR_VERBS.length} verbes`);
+console.log(`  ${LESSONS.length} leçons · ${UNITS.length} unités · ${KCS.length} notions · ${VOCAB.length} mots · ${IRREGULAR_VERBS.length} verbes`);
 if (warnings.length) {
   console.log(`⚠ ${warnings.length} élément(s) à relire`);
   group(warnings);

@@ -36,13 +36,17 @@
 - **Interface** : `useProfileText()` (`src/ui/profile.ts`) fournit `g('prêt', 'prête')` et `t('{prêt|prête}')`.
 - À accorder dans le futur contenu : les phrases où l'apprenant parle de lui-même (« je suis allé », « fatigué », « désolé », un métier).
 
-## 4. Voix (`src/speech/voices.ts`)
+## 4. Voix
 
-- Les voix « gadget » d'Apple (Bad News, Zarvox, Bubbles…) et les voix Eloquence de faible qualité sont écartées.
-- Classement : naturelle (Premium, Neural, Natural) > améliorée > standard, puis genre préféré, puis voix locale.
-- L'utilisateur choisit l'accent (UK, US, AU), une voix féminine ou masculine, et une voix précise après l'avoir écoutée.
-- Si l'accent manque sur l'appareil, les autres voix anglaises sont proposées.
-- Sur iPhone, une astuce explique comment installer gratuitement une voix Premium (Réglages › Accessibilité › Contenu énoncé).
+- **Voix de Cadence (par défaut)** : audio pré-généré avec Kokoro (licence Apache 2.0), deux voix américaines naturelles,
+  **Lily** (`af_heart`) et **Michael** (`am_michael`). Identiques sur tous les téléphones, sans dépendre des voix installées.
+- Recensement des textes lus : `src/speech/corpus.ts` (leçons, défis, test de niveau, vocabulaire, verbes) ; un test vérifie
+  qu'aucun texte lu n'est oublié. Clé de fichier : hachage FNV-1a du texte normalisé (`src/speech/audioKey.ts`).
+- Lecture (`src/speech/audio.ts`) : un seul élément audio débloqué au premier toucher (contrainte iOS), débit réglable sans
+  changer la hauteur de la voix, fichiers mis en cache par le service worker à la première écoute ou d'un coup depuis le profil.
+- **Secours** : un texte sans fichier, ou le réglage « voix du téléphone », passe par la synthèse de l'appareil
+  (`src/speech/voices.ts` : voix gadget écartées, qualité et identité lues dans le `voiceURI`, indispensable sur iPhone).
+- Regénérer après un ajout de contenu : `npm run voices` (voir README).
 
 ## 5. Écrans
 

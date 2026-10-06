@@ -14,7 +14,7 @@ import { Mascot, MascotSays } from '../../ui/Mascot';
 import { ProgressBar } from '../../ui/ProgressBar';
 import { sfx } from '../../ui/sfx';
 import { useProfileText } from '../../ui/profile';
-import { unitStyle } from '../../ui/units';
+import { unitLabel, unitStyle } from '../../ui/units';
 import { CheckIcon, CloseIcon, CrownIcon, DumbbellIcon, TargetIcon, TrophyIcon } from '../../ui/Icons';
 
 type Kind = 'practice' | 'challenge';
@@ -25,7 +25,6 @@ export function UnitStepPlayer() {
   const jump = search.get('jump') === '1';
   const kind: Kind = rawKind === 'challenge' ? 'challenge' : 'practice';
   const unit = UNITS.find((u) => u.id === unitId);
-  const unitIndex = UNITS.findIndex((u) => u.id === unitId);
   const navigate = useNavigate();
   const p = useProfileText();
   const [items, setItems] = useState<SessionItem[] | null>(null);
@@ -87,7 +86,7 @@ export function UnitStepPlayer() {
         <button className="icon-btn" aria-label="Fermer" onClick={() => navigate('/path')}><CloseIcon /></button>
       </div>
       <section className="cta-card" style={{ gap: 10 }}>
-        <p className="tiny">Unité {unitIndex + 1} · {unit.title}</p>
+        <p className="tiny">{unitLabel(unitId)} · {unit.title}</p>
         <div className="row">
           <span className="icon-tile" style={{ background: 'rgb(255 255 255 / .2)', color: '#fff' }}>
             {isChallenge ? <TrophyIcon /> : <DumbbellIcon />}
@@ -156,9 +155,11 @@ function ChallengeResult({ unitId, summary, outcome, jump }: { unitId: string; s
             {pct} % de bonnes réponses.{' '}
             {jump && outcome.validated.length > 1
               ? `${outcome.validated.length} unités validées d’un coup !`
-              : nextUnit
-                ? `L’unité « ${nextUnit.title} » est débloquée.`
-                : p.t('Tu as terminé tout le niveau A2, bravo !')}
+              : nextUnit && nextUnit.cefr !== unit.cefr
+                ? `Niveau ${unit.cefr} terminé ! Le niveau ${nextUnit.cefr} est débloqué.`
+                : nextUnit
+                  ? `L’unité « ${nextUnit.title} » est débloquée.`
+                  : p.t('Tu as terminé tout le parcours, de A2 à C2. Bravo !')}
           </p>
         </div>
         <section className="card stack" style={{ gap: 10 }}>

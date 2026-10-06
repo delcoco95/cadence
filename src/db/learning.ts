@@ -1,11 +1,13 @@
 import { db, getSettings, type Attempt } from './db';
-import { CHECKPOINTS, EXERCISES_BY_KC, IRREGULAR_VERBS, UNITS, VOCAB_A2, getLesson, irregularById, vocabById, THEMES } from '../content';
-import type { ErrorTag, Exercise, IrregularVerb, Lesson, VocabEntry } from '../content/types';
+import { CHECKPOINTS, EXERCISES_BY_KC, IRREGULAR_VERBS, UNITS, VOCAB, getLesson, irregularById, vocabById } from '../content';
+import { CEFR_LEVELS } from '../content/types';
+import { loadPath } from './units';
+import type { ErrorTag, Exercise, IrregularVerb, Lesson } from '../content/types';
 import type { ExerciseResult } from '../core/exercise';
 import { cardId, isLearned, newCard, ratingFor, retrievability, review, State, type SrsCard, type SrsItemType } from '../core/srs';
 import { emptyMastery, isWeak, observe, summarize, type MasterySummary } from '../core/mastery';
 import { EVIDENCE_LEVELS, evidenceOf, type Evidence } from '../core/evidence';
-import { irregularExercise, irregularModeFor, vocabExercise, vocabModeFor, type VocabMode } from '../core/generators';
+import { irregularExercise, irregularIntro, irregularModeFor, vocabExercise, vocabIntro, vocabModeFor, type VocabMode } from '../core/generators';
 import { buildSession, type NewItem, type SessionItem } from '../core/session';
 import { persistentDifficulties, type PersistentDifficulty } from '../core/errors';
 import { interleave, planRetry, reformat } from '../core/retry';
@@ -140,7 +142,7 @@ export function retryItem(
     // Mot raté : on redemande dans un autre format (production si c'était de la reconnaissance).
     const info = vocabAttemptInfo(failed.id);
     const next: VocabMode = info?.mode === 'en_fr' || info?.mode === 'listen' ? 'fr_en' : 'en_fr';
-    return { ...source, exercise: vocabExercise(vocab, VOCAB_A2, next, `${failed.id}#${attempt}`), source: 'retry', shuffleSeed: `${failed.id}#${attempt}` };
+    return { ...source, exercise: vocabExercise(vocab, VOCAB, next, `${failed.id}#${attempt}`), source: 'retry', shuffleSeed: `${failed.id}#${attempt}` };
   }
   if (failed.id.startsWith('gen-irr-')) {
     const verb = IRREGULAR_VERBS.find((v) => failed.id.startsWith(`gen-irr-${v.id}-`));
@@ -184,7 +186,7 @@ export async function prepareRecap(max: number, excludeIds: Set<string>, speakin
     if (kind === 'v') {
       const v = vocabById.get(id);
       const mode: VocabMode = speaking && out.length % 2 === 1 ? 'say' : v?.example ? 'cloze' : 'fr_en';
-      ex = v && vocabExercise(v, VOCAB_A2, mode);
+      ex = v && vocabExercise(v, VOCAB, mode);
     } else if (kind === 'i') {
       const v = irregularById.get(id);
       ex = v && irregularExercise(v, speaking && out.length % 3 === 2 ? 'say' : 'three');
@@ -201,22 +203,6 @@ export async function prepareRecap(max: number, excludeIds: Set<string>, speakin
 }
 
 // ───────────── Construction de la séance ─────────────
-
-const vocabIntro = (v: VocabEntry): NewItem['intro'] => ({
-  label: `Nouveau mot · ${THEMES[v.theme] ?? v.theme}`,
-  title: v.en,
-  subtitle: v.fr,
-  lines: v.example ? [{ en: v.example, fr: v.exampleFr }] : undefined,
-  speak: v.example ? `${v.en}. ${v.example}` : v.en,
-});
-
-const irregularIntro = (v: IrregularVerb): NewItem['intro'] => ({
-  label: 'Verbe irrégulier',
-  title: `${v.base} → ${v.past} → ${v.participle}`,
-  subtitle: v.fr,
-  lines: [{ en: `base : ${v.base}` }, { en: `past simple : ${v.past}` }, { en: `participe passé : ${v.participle}` }],
-  speak: `${v.base}, ${v.past.replace('/', 'or')}, ${v.participle.replace('/', 'or')}`,
-});
 
 /** Nombre de nouveaux éléments déjà présentés aujourd'hui. */
 async function introducedToday(): Promise<{ vocab: number; irregular: number }> {
@@ -248,6 +234,9 @@ export async function prepareSession(focus: Focus, budgetSeconds: number): Promi
   const seed = `${dayKey()}-${focus}-${now}`;
   const [cards, seen, today, weakKcs] = await Promise.all([db.srsCards.toArray(), seenMap(), introducedToday(), focusKcs()]);
   const known = new Set(cards.map((c) => c.id));
+  // Nouveaux mots : jusqu'au niveau de l'étape en cours du parcours (pas de vocabulaire C1 à un débutant).
+  const levelIndex = CEFR_LEVELS.indexOf((await currentLevel()) ?? 'A2');
+  const levelVocab = VOCAB.filter((v) => CEFR_LEVELS.indexOf(v.cefr) <= levelIndex);
 
   const typeAllowed = (t: SrsItemType) =>
     focus === 'all' || (focus === 'vocab' && t === 'vocab') || (focus === 'irregular' && t === 'irregular');
@@ -256,7 +245,7 @@ export async function prepareSession(focus: Focus, budgetSeconds: number): Promi
     if (card.type === 'kc') return pickForKc(card.itemId, seen, evidenceForReps(card.reps), speaking)[0];
     if (card.type === 'vocab') {
       const v = vocabById.get(card.itemId);
-      return v && vocabExercise(v, VOCAB_A2, vocabModeFor(card.reps, `${seed}${v.id}`, speaking), `${seed}${v.id}`);
+      return v && vocabExercise(v, VOCAB, vocabModeFor(card.reps, `${seed}${v.id}`, speaking), `${seed}${v.id}`);
     }
     const v = irregularById.get(card.itemId);
     return v && irregularExercise(v, irregularModeFor(card.reps, `${seed}${v.id}`, speaking));
@@ -264,9 +253,9 @@ export async function prepareSession(focus: Focus, budgetSeconds: number): Promi
 
   const newWords: NewItem[] =
     focus === 'all' || focus === 'vocab'
-      ? prioritizeByMotivation(VOCAB_A2, settings.motivations).filter((v) => !known.has(cardId('vocab', v.id)))
+      ? prioritizeByMotivation(levelVocab, settings.motivations).filter((v) => !known.has(cardId('vocab', v.id)))
           .slice(0, Math.max(0, (focus === 'vocab' ? settings.newWordsPerDay * 2 : settings.newWordsPerDay) - today.vocab))
-          .map((v) => ({ cardId: cardId('vocab', v.id), intro: vocabIntro(v), exercise: vocabExercise(v, VOCAB_A2, 'en_fr', seed) }))
+          .map((v) => ({ cardId: cardId('vocab', v.id), intro: vocabIntro(v), exercise: vocabExercise(v, VOCAB, 'en_fr', seed) }))
       : [];
   const newVerbs: NewItem[] =
     focus === 'all' || focus === 'irregular'
@@ -315,6 +304,12 @@ export async function lessonRecap(lesson: Lesson): Promise<SessionItem[]> {
   const exclude = new Set(lesson.exercises.map((e) => e.id));
   const recap = await prepareRecap(3, exclude, settings.speakingEnabled);
   return recap.map((exercise) => ({ kind: 'exercise', exercise, source: 'recap' }));
+}
+
+/** Niveau de l'étape en cours du parcours. */
+async function currentLevel() {
+  const next = (await loadPath()).next;
+  return next ? UNITS.find((u) => u.id === next.unitId)?.cefr : undefined;
 }
 
 // ───────────── Étapes d'unité ─────────────

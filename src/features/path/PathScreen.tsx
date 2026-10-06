@@ -7,7 +7,7 @@ import type { Step, UnitView } from '../../core/units';
 import { loadPath, stepPath } from '../../db/units';
 import { useSettings } from '../../db/hooks';
 import { Mascot } from '../../ui/Mascot';
-import { unitStyle } from '../../ui/units';
+import { unitLabel, unitStyle } from '../../ui/units';
 import { BookIcon, CheckIcon, CrownIcon, DumbbellIcon, LockIcon, RefreshIcon, StarIcon, TargetIcon, TrophyIcon } from '../../ui/Icons';
 import { ProgressBar } from '../../ui/ProgressBar';
 
@@ -67,18 +67,17 @@ export function PathScreen() {
               <span className="icon-tile" style={{ background: 'var(--surface-2)', color: 'var(--muted)' }}><LockIcon /></span>
               <div>
                 <b style={{ color: 'var(--text)' }}>Niveau {level}</b>
-                <p className="note">Bientôt disponible. Continue le niveau A2 en attendant.</p>
+                <p className="note">Bientôt disponible.</p>
               </div>
             </div>
           );
         }
         return views.map((v) => {
-          const index = UNITS.indexOf(v.unit);
           return (
             <section key={v.unit.id} className={`unit${v.unlocked ? '' : ' locked'}`} style={unitStyle(v.unit.id)}>
               <div className="unit-banner">
                 <div className="grow">
-                  <p className="tiny">{level} · Unité {index + 1}</p>
+                  <p className="tiny">{unitLabel(v.unit.id)}</p>
                   <h2 style={{ fontSize: 21 }}>{v.unit.title}</h2>
                   <p>{v.unit.description}</p>
                   {v.validated && (

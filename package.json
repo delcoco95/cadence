@@ -11,7 +11,9 @@
     "test": "vitest run",
     "icons": "node tools/make-icons.mjs",
     "typecheck": "tsc -b",
-    "validate-content": "tsx tools/validate-content.ts"
+    "validate-content": "tsx tools/validate-content.ts",
+    "speech-corpus": "tsx tools/export-speech-corpus.ts",
+    "voices": "npm run speech-corpus && npm --prefix tools/voices install && npm --prefix tools/voices run generate"
   },
   "dependencies": {
     "@fontsource-variable/nunito": "^5.3.0",

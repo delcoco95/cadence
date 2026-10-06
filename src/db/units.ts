@@ -95,7 +95,7 @@ export async function applyPlacement(id: number): Promise<void> {
 
 // ───────────── Niveau choisi sans test ─────────────
 
-export type LevelChoice = 'test' | 'A1' | 'A2' | 'B1' | 'B2';
+export type LevelChoice = 'test' | 'A1' | 'A2' | 'B1' | 'B2' | 'C1';
 
 export const LEVEL_CHOICES: { value: LevelChoice; label: string; hint: string; tone: string }[] = [
   { value: 'test', label: 'Je passe le test de niveau', hint: 'Recommandé · 10 min, adaptatif, sur le modèle des tests officiels', tone: 'tone-sun' },
@@ -103,19 +103,23 @@ export const LEVEL_CHOICES: { value: LevelChoice; label: string; hint: string; t
   { value: 'A2', label: 'Élémentaire', hint: 'Je me débrouille avec des phrases simples', tone: 'tone-sky' },
   { value: 'B1', label: 'Intermédiaire', hint: 'Je tiens une conversation simple sur des sujets connus', tone: 'tone-primary' },
   { value: 'B2', label: 'Avancé', hint: 'Je suis à l’aise dans la plupart des situations', tone: 'tone-pink' },
+  { value: 'C1', label: 'Expérimenté', hint: 'Je m’exprime avec aisance, même dans un cadre exigeant', tone: 'tone-teal' },
 ];
 
 /**
- * Niveau déclaré par l'apprenant. À partir de B1, le niveau A2 est entièrement ouvert
- * (marqué « niveau choisi », sans prétendre qu'il a été prouvé) : les défis restent disponibles.
+ * Niveau déclaré par l'apprenant : le parcours démarre au début de ce niveau. Les unités des niveaux
+ * inférieurs sont ouvertes (marquées « niveau choisi », sans prétendre qu'elles ont été prouvées) :
+ * leurs défis restent disponibles pour vérifier.
  */
 export async function applyChosenLevel(level: Exclude<LevelChoice, 'test'>): Promise<void> {
-  const advanced = level === 'B1' || level === 'B2';
-  await updateSettings({ estimatedBand: level, startLevel: advanced ? level : 'A2' });
-  if (!advanced) return;
+  const start = level === 'A1' ? 'A2' : level;
+  await updateSettings({ estimatedBand: level, startLevel: start });
+  const order = ['A2', 'B1', 'B2', 'C1', 'C2'];
+  const below = UNITS.filter((u) => order.indexOf(u.cefr) < order.indexOf(start));
+  if (!below.length) return;
   const now = Date.now();
   await db.transaction('rw', db.unitProgress, async () => {
-    for (const u of UNITS) {
+    for (const u of below) {
       const r = await record(u.id);
       if (!r.validatedAt) await db.unitProgress.put({ ...r, validatedAt: now, via: 'self' });
     }

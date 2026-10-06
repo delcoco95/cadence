@@ -6,7 +6,7 @@ import type { SessionItem } from '../../core/session';
 import { completeLesson } from '../../db/progress';
 import { lessonRecap, scheduleLessonKcs } from '../../db/learning';
 import { useSettings } from '../../db/hooks';
-import { speak } from '../../speech/tts';
+import { useSpeaker } from '../../speech/useSpeaker';
 import { genderizeDeep } from '../../core/gender';
 import { CloseIcon, MicIcon, SparkleIcon, SpeakerIcon } from '../../ui/Icons';
 import { MascotSays } from '../../ui/Mascot';
@@ -25,6 +25,7 @@ export function LessonPlayer() {
   const profile = useProfileText();
   const [goalBanner, setGoalBanner] = useState(false);
   const ping = useActiveTime(() => setGoalBanner(true));
+  const say = useSpeaker(ping);
   const [phase, setPhase] = useState<'intro' | 'exercise' | 'done'>('intro');
   const [summary, setSummary] = useState<RunSummary | null>(null);
 
@@ -79,13 +80,6 @@ export function LessonPlayer() {
     );
   }
 
-  const say = (t: string) => {
-    ping();
-    speak(t, settings?.accent ?? 'en-GB', {
-      rate: settings?.speechRate ?? 0.9,
-      voice: { id: settings?.voiceId, gender: settings?.voiceGender ?? 'any' },
-    });
-  };
   const speakCount = lesson.exercises.filter((e) => e.type === 'speak').length;
   const unit = unitOfLesson(lesson.id);
   const explanation = genderizeDeep(lesson.explanation, profile.gender);

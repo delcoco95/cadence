@@ -174,11 +174,17 @@ export interface SectionResult extends Estimate {
 export interface PlacementResult extends Estimate {
   band: PlacementBand;
   sections: Partial<Record<PlacementSection, SectionResult>>;
-  /** Unités A2 dont le contenu est déjà acquis (dispense proposée) */
+  /** Unités dont le contenu est déjà acquis (dispense proposée) */
   testedOutUnits: string[];
 }
 
-export function placementResult(responses: PlacementResponse[], unitOrder: string[]): PlacementResult {
+/** Unité du parcours, telle que la dispense la voit. */
+export interface UnitRef {
+  id: string;
+  cefr: string;
+}
+
+export function placementResult(responses: PlacementResponse[], units: UnitRef[]): PlacementResult {
   const global = estimate(responses);
   const sections: PlacementResult['sections'] = {};
   for (const cfg of SECTIONS) {
@@ -187,18 +193,26 @@ export function placementResult(responses: PlacementResponse[], unitOrder: strin
     const e = sectionEstimate(responses, cfg.section);
     sections[cfg.section] = { ...e, band: reportedBand(e.theta), n: rs.length, correct: rs.filter((r) => r.correct).length };
   }
-  return { ...global, band: reportedBand(global.theta), sections, testedOutUnits: testedOutUnits(responses, unitOrder) };
+  const band = reportedBand(global.theta);
+  return { ...global, band, sections, testedOutUnits: testedOutUnits(responses, units, band) };
 }
+
+const LEVEL_ORDER = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+/** Niveau CECRL entier d'une bande : B1+ → B1. */
+const levelOf = (band: PlacementBand) => band.replace('+', '');
 
 /**
  * Dispense d'unités : on ne saute que ce qui est prouvé.
+ * Unités A2 (items étiquetés par unité dans la banque) :
  * - niveau grammatical ≥ B1+ : toute unité A2 sans erreur sur ses items ;
  * - niveau ≥ A2+ : les unités dont au moins un item a été réussi, sans aucune erreur ;
  * - en dessous : aucune dispense.
+ * Unités B1 et au-delà : dispensées quand le niveau global estimé est STRICTEMENT supérieur
+ * (estimé B2 → tout B1 est dispensé, on commence au début de B2).
  * On ne garde que le début du parcours, d'un seul tenant : on ne saute pas une unité
  * en laissant une lacune avant elle.
  */
-export function testedOutUnits(responses: PlacementResponse[], unitOrder: string[]): string[] {
+export function testedOutUnits(responses: PlacementResponse[], units: UnitRef[], band: PlacementBand = reportedBand(estimate(responses).theta)): string[] {
   const grammar = sectionEstimate(responses, 'grammar').theta;
   if (grammar < -0.8) return [];
   const byUnit = new Map<string, { ok: number; ko: number }>();
@@ -209,15 +223,17 @@ export function testedOutUnits(responses: PlacementResponse[], unitOrder: string
     else s.ko++;
     byUnit.set(r.unitId, s);
   }
-  const passes = (unitId: string) => {
+  const passesA2 = (unitId: string) => {
     const s = byUnit.get(unitId);
     if (s?.ko) return false;
     return grammar >= 0.6 ? true : (s?.ok ?? 0) > 0;
   };
+  const reached = LEVEL_ORDER.indexOf(levelOf(band));
+  const passes = (u: UnitRef) => (u.cefr === 'A2' ? passesA2(u.id) : LEVEL_ORDER.indexOf(u.cefr) < reached);
   const out: string[] = [];
-  for (const u of unitOrder) {
+  for (const u of units) {
     if (!passes(u)) break;
-    out.push(u);
+    out.push(u.id);
   }
   return out;
 }

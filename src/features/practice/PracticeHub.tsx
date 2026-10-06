@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
-import { VOCAB_A2, IRREGULAR_VERBS } from '../../content';
+import { VOCAB, IRREGULAR_VERBS } from '../../content';
 import { learningStats } from '../../db/learning';
 import { MascotSays } from '../../ui/Mascot';
 import { useProfileText } from '../../ui/profile';
@@ -40,8 +40,8 @@ export function PracticeHub() {
         <Link className="module tone-pink" to="/practice/vocab">
           <span className="icon-tile"><BookIcon /></span>
           <b>Vocabulaire</b>
-          <span>{wordsSeen} / {VOCAB_A2.length} mots vus</span>
-          <ProgressBar value={wordsSeen / VOCAB_A2.length} thin tone="primary" />
+          <span>{wordsSeen} / {VOCAB.length} mots vus</span>
+          <ProgressBar value={wordsSeen / VOCAB.length} thin tone="primary" />
         </Link>
         <Link className="module tone-teal" to="/practice/irregular">
           <span className="icon-tile"><LetterIcon /></span>

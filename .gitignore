@@ -3,3 +3,8 @@ dist
 dev-dist
 *.local
 *.tsbuildinfo
+
+# Outils de génération des voix
+tools/voices/node_modules
+tools/voices/samples
+tools/voices/*.log

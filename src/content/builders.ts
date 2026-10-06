@@ -13,6 +13,8 @@ interface Opts {
   tense?: string;
   instruction?: string;
   themes?: string[];
+  /** QCM de compréhension écrite : texte à lire avant la question */
+  passage?: string;
 }
 
 export function exercises(prefix: string, cefr: Cefr, defaults: { kc: string | string[]; tense?: string }) {
@@ -36,7 +38,10 @@ export function exercises(prefix: string, cefr: Cefr, defaults: { kc: string | s
   const api = {
     /** QCM : la bonne réponse est l'option d'index `answer`. */
     mcq(question: string, options: string[], answer: number, explanation: string, o: Opts = {}) {
-      list.push({ ...base(o, 'grammar', 'Choisis la bonne réponse.', explanation), type: 'mcq', question, options, answer });
+      list.push({
+        ...base(o, o.passage ? 'reading' : 'grammar', o.passage ? 'Lis le texte, puis réponds.' : 'Choisis la bonne réponse.', explanation),
+        type: 'mcq', question, options, answer, passage: o.passage,
+      });
       return api;
     },
     /** Texte à trous : `___` dans la phrase. */

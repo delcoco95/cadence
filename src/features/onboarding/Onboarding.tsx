@@ -28,7 +28,7 @@ const MOTIVATION_ICONS: Record<Motivation, { icon: ReactNode; tone: string }> = 
 
 const GOAL_LABELS: Record<number, string> = { 5: 'Tranquille', 10: 'Régulier', 15: 'Sérieux', 20: 'Intense', 30: 'Marathon' };
 
-type VoiceSettings = Pick<Settings, 'accent' | 'voiceId' | 'voiceGender' | 'speechRate'>;
+type VoiceSettings = Pick<Settings, 'accent' | 'voiceId' | 'voiceGender' | 'speechRate' | 'voiceSource' | 'cadenceVoice'>;
 
 export function Onboarding() {
   const needsInstall = isIOS() && !isStandalone();
@@ -44,6 +44,8 @@ export function Onboarding() {
     voiceId: undefined,
     voiceGender: DEFAULT_SETTINGS.voiceGender,
     speechRate: DEFAULT_SETTINGS.speechRate,
+    voiceSource: DEFAULT_SETTINGS.voiceSource,
+    cadenceVoice: DEFAULT_SETTINGS.cadenceVoice,
   });
 
   const g = (m: string, f: string, n?: string) => pick(gender ?? 'n', m, f, n);
@@ -220,8 +222,8 @@ export function Onboarding() {
               </button>
             ))}
           </div>
-          {(level === 'B1' || level === 'B2') && (
-            <p className="tip"><SparkleIcon />Le parcours B1 et B2 est en préparation. En attendant, tout le niveau A2 sera ouvert : révise à ton rythme et teste-toi avec les défis.</p>
+          {level && level !== 'test' && level !== 'A1' && level !== 'A2' && (
+            <p className="tip"><SparkleIcon />Tu commenceras au début du niveau {level}. Les niveaux précédents restent ouverts, avec leurs défis pour vérifier tes bases.</p>
           )}
           <div className="bottom-action">
             <button className="btn" disabled={!level} onClick={next}>Continuer</button>
@@ -258,7 +260,7 @@ export function Onboarding() {
 
       {step === 'voice' && (
         <div className="ob-body top">
-          <MascotSays mood="happy">Choisis la voix qui te lira les phrases. Touche une voix pour l’écouter.</MascotSays>
+          <MascotSays mood="happy">Choisis la voix qui te lira les phrases : touche une voix pour l’écouter.</MascotSays>
           <VoicePicker value={voice} onChange={(patch) => setVoice((v) => ({ ...v, ...patch }))} />
           <div className="bottom-action">
             <button className="btn" onClick={next}>Continuer</button>

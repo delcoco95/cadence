@@ -5,6 +5,7 @@ import type { ExerciseProps } from './ExerciseView';
 import { AudioPrompt } from './AudioPrompt';
 import { SaysPrompt } from './ExerciseView';
 import { MicIcon, StopIcon } from '../../ui/Icons';
+import { stopSpeaking } from '../../speech/tts';
 
 type Status = 'idle' | 'listening' | 'done' | 'fallback';
 
@@ -31,7 +32,7 @@ export function SpeakInput({ exercise, locked, onChange, say, lang, onSkipSpeaki
     setError(null);
     setText('');
     onChange(null);
-    speechSynthesis?.cancel();
+    stopSpeaking();
     const l = startListening(lang, {
       onText: (t) => setText(t),
       onEnd: (t) => {

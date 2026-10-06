@@ -29,6 +29,19 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,json,woff2}'],
+        // Les voix (plusieurs milliers de MP3) ne sont pas préchargées : chaque fichier est mis en cache
+        // à sa première écoute, ou en une fois depuis le profil (« Télécharger la voix »).
+        runtimeCaching: [
+          {
+            urlPattern: /\/audio\/[a-z_]+\/[0-9a-f]{8}\.mp3$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'cadence-voices',
+              expiration: { maxEntries: 6000 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       },
     }),
   ],

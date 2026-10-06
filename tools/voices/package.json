@@ -1,0 +1,14 @@
+{
+  "name": "cadence-voices",
+  "private": true,
+  "type": "module",
+  "description": "Génération hors ligne des voix de Cadence (Kokoro, Apache 2.0)",
+  "scripts": {
+    "samples": "node samples.mjs",
+    "generate": "node generate.mjs"
+  },
+  "dependencies": {
+    "@breezystack/lamejs": "^1.2.7",
+    "kokoro-js": "^1.2.1"
+  }
+}

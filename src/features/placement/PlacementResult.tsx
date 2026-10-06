@@ -30,7 +30,7 @@ export function PlacementResultView({ result, id, durationMs }: { result: Placem
   const [busy, setBusy] = useState(false);
   const skipped = result.testedOutUnits.map((u) => UNITS.find((x) => x.id === u)!).filter(Boolean);
   const startUnit = UNITS.find((u) => !result.testedOutUnits.includes(u.id));
-  const allA2 = !startUnit;
+  const allDone = !startUnit;
   const minutes = Math.max(1, Math.round(durationMs / 60_000));
 
   async function accept() {
@@ -74,10 +74,10 @@ export function PlacementResultView({ result, id, durationMs }: { result: Placem
             {skipped.map((u) => (
               <p key={u.id} className="can-do small"><CheckIcon />{u.title}</p>
             ))}
-            {allA2 ? (
-              <p className="note">Tout le niveau A2 est validé. Le contenu B1 arrive bientôt : en attendant, les révisions et les défis consolident tes acquis.</p>
+            {allDone ? (
+              <p className="note">Tout le parcours est validé : les révisions et les défis entretiennent tes acquis.</p>
             ) : (
-              <p className="small">Tu commenceras à l’unité <b>{startUnit!.title}</b>.</p>
+              <p className="small">Tu commenceras au niveau <b>{startUnit!.cefr}</b>, unité <b>{startUnit!.title}</b>.</p>
             )}
           </>
         ) : (
@@ -92,7 +92,7 @@ export function PlacementResultView({ result, id, durationMs }: { result: Placem
         {skipped.length > 0 ? (
           <>
             <button className="btn" disabled={busy} onClick={() => void accept()}>
-              {allA2 ? 'Valider le niveau A2' : `Commencer à « ${startUnit!.title} »`}
+              {allDone ? 'Valider le parcours' : `Commencer en ${startUnit!.cefr} : « ${startUnit!.title} »`}
             </button>
             <button className="btn secondary" onClick={() => navigate('/path', { replace: true })}>Tout reprendre depuis le début</button>
           </>

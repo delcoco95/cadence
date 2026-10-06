@@ -1,4 +1,4 @@
-import { checkpointById, getExercise, irregularById, vocabById, VOCAB_A2, IRREGULAR_VERBS } from '../content';
+import { checkpointById, getExercise, irregularById, vocabById, VOCAB, IRREGULAR_VERBS } from '../content';
 import type { Exercise } from '../content/types';
 import { irregularExercise, vocabExercise, type IrregularMode, type VocabMode } from '../core/generators';
 import { reformat } from '../core/retry';
@@ -32,7 +32,7 @@ export function resolveExercise(id: string): Exercise | undefined {
     const rest = id.slice('gen-v-'.length);
     const mode = VOCAB_MODES.find((m) => rest.endsWith(`-${m}`));
     const entry = mode && vocabById.get(rest.slice(0, -(mode.length + 1)));
-    return entry && mode ? vocabExercise(entry, VOCAB_A2, mode) : undefined;
+    return entry && mode ? vocabExercise(entry, VOCAB, mode) : undefined;
   }
   if (id.startsWith('gen-irr-')) {
     const rest = id.slice('gen-irr-'.length);

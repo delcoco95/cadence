@@ -1,11 +1,12 @@
-import { useEffect, useReducer } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 import type { Accent, Settings } from '../../db/db';
 import { allVoices, onVoicesChanged, speak, ttsAvailable, voicesFor } from '../../speech/tts';
 import { TIER_LABELS, isNovelty, voiceId, voiceTier, type VoiceGenderPref, type VoiceTier } from '../../speech/voices';
 import { CheckIcon, SparkleIcon, SpeakerIcon } from '../../ui/Icons';
+import { CADENCE_VOICES, VOICE_SAMPLE, audioReady, clipCount, downloadVoice, playClip, type CadenceVoice } from '../../speech/audio';
 import { isIOS } from '../focus/shortcuts';
 
-type VoiceSettings = Pick<Settings, 'accent' | 'voiceId' | 'voiceGender' | 'speechRate'>;
+type VoiceSettings = Pick<Settings, 'accent' | 'voiceId' | 'voiceGender' | 'speechRate' | 'voiceSource' | 'cadenceVoice'>;
 // Effacer aussi l'ancien réglage par nom, sinon getSettings le reprendrait comme voix choisie.
 const NO_VOICE = { voiceId: undefined, voiceName: undefined } as Partial<VoiceSettings>;
 
@@ -30,8 +31,82 @@ const TIER: Record<VoiceTier, { label: string; cls: string }> = {
 const SAMPLE = (name: string) => `Hi, I'm ${name}! Let's learn English together, one step at a time.`;
 const MAX_VOICES = 6;
 
+type Props = { value: VoiceSettings; onChange: (patch: Partial<VoiceSettings>) => void };
+
+/** Voix de Cadence (pré-générées, identiques sur tous les téléphones), ou voix du téléphone en option. */
+export function VoicePicker({ value, onChange }: Props) {
+  const [count, setCount] = useState(clipCount());
+  const [download, setDownload] = useState<{ done: number; total: number } | null>(null);
+  useEffect(() => {
+    void audioReady().then(() => setCount(clipCount()));
+  }, []);
+  const device = value.voiceSource === 'device';
+  const choose = (v: CadenceVoice) => {
+    onChange({ voiceSource: 'cadence', cadenceVoice: v });
+    void playClip(VOICE_SAMPLE, v, Math.min(1.1, value.speechRate / 0.9));
+  };
+
+  return (
+    <div className="stack" style={{ gap: 14 }}>
+      <div className="stack" style={{ gap: 8 }}>
+        <p className="tiny muted">Voix de Cadence · identiques sur tous les téléphones</p>
+        <div className="voice-list">
+          {(Object.keys(CADENCE_VOICES) as CadenceVoice[]).map((v) => {
+            const selected = !device && value.cadenceVoice === v;
+            return (
+              <div key={v} className={`voice${selected ? ' selected' : ''}`}>
+                <button className="play" aria-label={`Écouter ${CADENCE_VOICES[v].name}`} onClick={() => void playClip(VOICE_SAMPLE, v)}>
+                  <SpeakerIcon />
+                </button>
+                <button className="grow" style={{ background: 'none', border: 'none', textAlign: 'left', padding: 0 }} onClick={() => choose(v)}>
+                  <b>{CADENCE_VOICES[v].name}</b>
+                  <span className="row" style={{ gap: 6, marginTop: 2 }}>
+                    <span className="chip success">Naturelle</span>
+                    <span className="note">{CADENCE_VOICES[v].label.toLowerCase()} · anglais américain</span>
+                  </span>
+                </button>
+                {selected && <CheckIcon style={{ width: 22, height: 22, color: 'var(--primary)', flex: 'none' }} />}
+              </div>
+            );
+          })}
+        </div>
+        {count === 0 ? (
+          <p className="note">Les voix de Cadence ne sont pas encore disponibles (connexion requise au premier lancement) : la voix du téléphone est utilisée en attendant.</p>
+        ) : (
+          !device && (
+            <button
+              className="btn secondary small"
+              style={{ width: '100%' }}
+              disabled={!!download && download.done < download.total}
+              onClick={() => void downloadVoice(value.cadenceVoice, (done, total) => setDownload({ done, total }))}
+            >
+              {download
+                ? download.done < download.total
+                  ? `Téléchargement… ${Math.round((download.done / download.total) * 100)} %`
+                  : 'Voix disponible hors ligne'
+                : `Télécharger la voix pour le hors-ligne (~${Math.round((count * 24) / 1024)} Mo)`}
+            </button>
+          )
+        )}
+      </div>
+
+      <div className="setting" style={{ borderTop: '2px solid var(--surface-2)', paddingTop: 14 }}>
+        <div>
+          <b>Utiliser les voix du téléphone</b>
+          <p className="note">Qualité variable selon l’appareil. Utile pour un autre accent (britannique, australien).</p>
+        </div>
+        <label className="toggle">
+          <input type="checkbox" aria-label="Voix du téléphone" checked={device} onChange={(e) => onChange({ voiceSource: e.target.checked ? 'device' : 'cadence' })} />
+          <span />
+        </label>
+      </div>
+      {device && <DeviceVoicePicker value={value} onChange={onChange} />}
+    </div>
+  );
+}
+
 /** Choix de l'accent, du genre de la voix et de la voix elle-même, avec écoute. */
-export function VoicePicker({ value, onChange }: { value: VoiceSettings; onChange: (patch: Partial<VoiceSettings>) => void }) {
+function DeviceVoicePicker({ value, onChange }: Props) {
   const [, refresh] = useReducer((n: number) => n + 1, 0);
   useEffect(() => onVoicesChanged(refresh), []);
 
@@ -47,7 +122,7 @@ export function VoicePicker({ value, onChange }: { value: VoiceSettings; onChang
   const bestTier = ranked[0]?.tier ?? 1;
 
   const preview = (id: string, label: string) =>
-    speak(SAMPLE(label), value.accent, { rate: value.speechRate, voice: { id, gender: value.voiceGender } });
+    speak(SAMPLE(label), value.accent, { rate: value.speechRate, voice: { id, gender: value.voiceGender, source: 'device' } });
 
   if (!ttsAvailable()) return <p className="note">La synthèse vocale n’est pas disponible sur ce navigateur.</p>;
 

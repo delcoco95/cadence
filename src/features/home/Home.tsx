@@ -12,7 +12,7 @@ import { ProgressBar } from '../../ui/ProgressBar';
 import { Ring } from '../../ui/Ring';
 import { MascotSays } from '../../ui/Mascot';
 import { hello, homeLine, useProfileText } from '../../ui/profile';
-import { unitStyle } from '../../ui/units';
+import { unitLabel, unitStyle } from '../../ui/units';
 import {
   BoltIcon, BookIcon, BrainIcon, CheckIcon, ChevronIcon, DumbbellIcon, FlameIcon, LetterIcon, RefreshIcon, StarIcon, TargetIcon, TrophyIcon,
 } from '../../ui/Icons';
@@ -31,7 +31,6 @@ export function Home() {
   const p = useProfileText();
   const lesson = step?.kind === 'lesson' ? getLesson(step.lessonId!) : undefined;
   const unit = step ? UNITS.find((u) => u.id === step.unitId) : undefined;
-  const unitNumber = unit ? UNITS.indexOf(unit) + 1 : 0;
 
   const goalMinutes = settings?.dailyGoalMinutes ?? 5;
   const goalSeconds = today?.goalSeconds ?? goalMinutes * 60;
@@ -103,7 +102,7 @@ export function Home() {
 
       {step && unit && (
         <section className="cta-card" style={unitStyle(unit.id)}>
-          <p className="tiny">Unité {unitNumber} · {unit.title}</p>
+          <p className="tiny">{unitLabel(unit.id)} · {unit.title}</p>
           {step.kind === 'lesson' && lesson ? (
             <div className="stack" style={{ gap: 4 }}>
               <h2>{lesson.title}</h2>

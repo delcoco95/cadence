@@ -1,5 +1,7 @@
 import type { CefrBand, ErrorTag } from './types';
 import { THEMES } from './vocab/a2';
+import { LEVELS } from './levels';
+import type { KcDef } from './level';
 
 /**
  * Registre des notions (knowledge components). Toute notion citée par un exercice
@@ -80,6 +82,16 @@ export const KCS: KnowledgeComponent[] = [
     id: `vocab.${k}`, label: `Vocabulaire : ${v.toLowerCase()}`, band: 'A2' as const, domain: 'vocabulary' as const,
     prerequisites: [], errorTags: ['vocabulary_missing', 'spelling'] as ErrorTag[],
   })),
+  ...LEVELS.flatMap((level) => [
+    ...Object.entries(level.kcs as Record<string, KcDef>).map(([id, d]) => ({
+      id, label: d.label, band: d.band, domain: d.domain ?? ('grammar' as const),
+      prerequisites: d.pre ?? [], related: d.related, errorTags: d.errorTags, lessonId: d.lessonId,
+    })),
+    ...Object.entries(level.themes).map(([k, v]) => ({
+      id: `vocab.${k}`, label: `Vocabulaire : ${v.toLowerCase()}`, band: level.cefr as CefrBand, domain: 'vocabulary' as const,
+      prerequisites: [], errorTags: ['vocabulary_missing', 'spelling'] as ErrorTag[],
+    })),
+  ]),
 ];
 
 export const kcById = new Map(KCS.map((k) => [k.id, k]));

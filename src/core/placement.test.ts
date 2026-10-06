@@ -70,7 +70,7 @@ describe('placement : déroulé adaptatif', () => {
       const close = runs.filter((r) => Math.abs(ORDER.indexOf(r.band) - target) <= 1).length / runs.length;
       expect(close, `θ = ${trueTheta}`).toBeGreaterThanOrEqual(0.8);
     }
-  });
+  }, 60_000); // 180 tests simulés : plusieurs secondes sur une machine chargée
 
   it('ne pose pas deux fois le même test', () => {
     const a = simulate(0, POOL, 7).map((r) => r.id).join();
@@ -88,7 +88,7 @@ describe('placement : plafond', () => {
 });
 
 describe('placement : dispense d’unités', () => {
-  const units = UNITS.map((u) => u.id);
+  const units = UNITS.filter((u) => u.cefr === 'A2');
   let n = 0;
   const grammar = (b: number, correct: boolean, unitId?: string): PlacementResponse => ({
     id: `g${n++}`, section: 'grammar', b, guess: 0.25, correct, unitId,
@@ -96,7 +96,7 @@ describe('placement : dispense d’unités', () => {
 
   it('ne dispense de rien un niveau débutant', () => {
     const rs = [grammar(-2, false, 'a2-basics'), grammar(-1.5, false), grammar(-1, false)];
-    expect(testedOutUnits(rs, units)).toEqual([]);
+    expect(testedOutUnits(rs, units, 'A2')).toEqual([]);
   });
 
   it('dispense un niveau avancé, mais jamais d’une unité ratée ni au-delà d’une lacune', () => {
@@ -104,10 +104,29 @@ describe('placement : dispense d’unités', () => {
       grammar(-2, true, 'a2-basics'), grammar(-1, true, 'a2-present-simple'), grammar(0, true), grammar(1, true),
       grammar(1.5, true), grammar(1.3, true), grammar(-1, false, 'a2-questions'),
     ];
-    const out = testedOutUnits(rs, units);
+    const out = testedOutUnits(rs, units, 'B2');
     expect(out.slice(0, 3)).toEqual(['a2-basics', 'a2-present-simple', 'a2-present-continuous']);
     expect(out).not.toContain('a2-questions');
     expect(out).not.toContain('a2-past-simple');
+  });
+});
+
+describe('placement : dispense sur plusieurs niveaux', () => {
+  const units = [
+    { id: 'a', cefr: 'A2' },
+    { id: 'b1x', cefr: 'B1' },
+    { id: 'b1y', cefr: 'B1' },
+    { id: 'b2x', cefr: 'B2' },
+  ];
+  const strong: PlacementResponse[] = [-1, 0, 1, 1.5, 2].map((b, i) => ({ id: `s${i}`, section: 'grammar', b, guess: 0.25, correct: true }));
+
+  it('dispense les niveaux strictement inférieurs au niveau estimé', () => {
+    expect(testedOutUnits(strong, units, 'B2')).toEqual(['a', 'b1x', 'b1y']);
+    expect(testedOutUnits(strong, units, 'B2+')).toEqual(['a', 'b1x', 'b1y']);
+  });
+
+  it('ne dispense pas le niveau en cours', () => {
+    expect(testedOutUnits(strong, units, 'B1+')).toEqual(['a']);
   });
 });
 

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useMemo, useRef, useState, type ReactNode } from 'react';
 import type { ErrorTag, Exercise } from '../../content/types';
 import { gradeExercise, xpFor, type ExerciseResponse, type ExerciseResult } from '../../core/exercise';
 import type { IntroCard, SessionItem } from '../../core/session';
@@ -9,7 +9,7 @@ import { recordResult, retryItem, type Confidence } from '../../db/learning';
 import { IRREGULAR_FORMS } from '../../db/meta';
 import type { Attempt } from '../../db/db';
 import { useSettings } from '../../db/hooks';
-import { speak } from '../../speech/tts';
+import { useSpeaker } from '../../speech/useSpeaker';
 import { ProgressBar } from '../../ui/ProgressBar';
 import { CheckIcon, CloseIcon, FlameIcon, SparkleIcon, SpeakerIcon } from '../../ui/Icons';
 import { MascotSays } from '../../ui/Mascot';
@@ -84,16 +84,7 @@ export function ExerciseRunner({ items, context, lessonId, onExit, onFinish, ban
   const sessionStart = useRef(Date.now());
 
   const accent = settings?.accent ?? 'en-GB';
-  const rate = settings?.speechRate ?? 0.9;
-  const voiceId = settings?.voiceId;
-  const voiceGender = settings?.voiceGender ?? 'any';
-  const say = useCallback(
-    (text: string, slow?: boolean) => {
-      onActivity?.();
-      speak(text, accent, { rate: slow ? 0.6 : rate, voice: { id: voiceId, gender: voiceGender } });
-    },
-    [accent, rate, voiceId, voiceGender, onActivity],
-  );
+  const say = useSpeaker(onActivity);
 
   const current = queue[pos];
   const progress = (pos + (pending ? 1 : 0)) / Math.max(1, queue.length);
