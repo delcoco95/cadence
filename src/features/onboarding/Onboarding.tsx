@@ -27,7 +27,7 @@ const MOTIVATION_ICONS: Record<Motivation, { icon: ReactNode; tone: string }> = 
 
 const GOAL_LABELS: Record<number, string> = { 5: 'Tranquille', 10: 'Régulier', 15: 'Sérieux', 20: 'Intense', 30: 'Marathon' };
 
-type VoiceSettings = Pick<Settings, 'accent' | 'voiceName' | 'voiceGender' | 'speechRate'>;
+type VoiceSettings = Pick<Settings, 'accent' | 'voiceId' | 'voiceGender' | 'speechRate'>;
 
 export function Onboarding() {
   const needsInstall = isIOS() && !isStandalone();
@@ -39,7 +39,7 @@ export function Onboarding() {
   const [goal, setGoal] = useState(10);
   const [voice, setVoice] = useState<VoiceSettings>({
     accent: DEFAULT_SETTINGS.accent,
-    voiceName: undefined,
+    voiceId: undefined,
     voiceGender: DEFAULT_SETTINGS.voiceGender,
     speechRate: DEFAULT_SETTINGS.speechRate,
   });

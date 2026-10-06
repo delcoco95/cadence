@@ -65,14 +65,27 @@ function firstWord(name: string): string {
   return voiceLabel(name).toLowerCase().split(/\s+/).pop() ?? '';
 }
 
+/**
+ * Identifiant stable d'une voix. Sur iPhone, une voix téléchargée porte le MÊME nom que sa version
+ * compacte (deux « Samantha ») : seul le voiceURI les distingue
+ * (com.apple.voice.compact.en-US.Samantha / com.apple.voice.enhanced.en-US.Samantha).
+ */
+export const voiceId = (v: VoiceLike): string => v.voiceURI || v.name;
+
+/** Nom et identifiant ensemble : sur iOS, la qualité n'apparaît que dans l'identifiant. */
+const signature = (v: VoiceLike) => `${v.name} ${v.voiceURI ?? ''}`;
+
 export function isNovelty(v: VoiceLike): boolean {
-  return NOVELTY.has(voiceLabel(v.name).toLowerCase());
+  if (NOVELTY.has(voiceLabel(v.name).toLowerCase())) return true;
+  // Voix « gadget » d'Apple et voix Eloquence, très robotiques, reconnues par leur identifiant.
+  return /eloquence|speech\.synthesis\.voice\./i.test(v.voiceURI ?? '');
 }
 
 export function voiceTier(v: VoiceLike): VoiceTier {
-  if (/premium|neural|natural|wavenet|studio/i.test(v.name)) return 3;
+  const sig = signature(v);
+  if (/premium|neural|natural|wavenet|studio/i.test(sig)) return 3;
   // Les voix Google en ligne de Chrome sont nettement meilleures que les voix locales standard.
-  if (/enhanced|améliorée|amélioré/i.test(v.name) || (/^google/i.test(v.name) && v.localService === false)) return 2;
+  if (/enhanced|améliorée|amélioré/i.test(sig) || (/^google/i.test(v.name) && v.localService === false)) return 2;
   return 1;
 }
 
@@ -108,6 +121,8 @@ export function rankVoices<V extends VoiceLike>(voices: V[], accent: string, pre
     .sort((a, b) => b.score - a.score || a.label.localeCompare(b.label));
 }
 
+export const TIER_LABELS: Record<VoiceTier, string> = { 3: 'Naturelle', 2: 'Améliorée', 1: 'Standard' };
+
 /**
  * Voix à utiliser : celle choisie par l'utilisateur si elle existe sur l'appareil,
  * sinon la meilleure de l'accent, sinon la meilleure voix anglaise d'un autre accent.
@@ -116,12 +131,16 @@ export function chooseVoice<V extends VoiceLike>(
   voices: V[],
   accent: string,
   pref: VoiceGenderPref = 'any',
-  preferredName?: string,
+  preferred?: string,
 ): V | undefined {
-  if (preferredName) {
+  if (preferred) {
     // Une voix choisie explicitement est gardée même d'un autre accent (repli quand l'accent manque).
-    const chosen = voices.find((v) => v.name === preferredName && isEnglish(v));
-    if (chosen) return chosen;
+    const english = voices.filter((v) => isEnglish(v) && !isNovelty(v));
+    const exact = english.find((v) => voiceId(v) === preferred);
+    if (exact) return exact;
+    // Ancien réglage (nom seul) : parmi les voix de ce nom, la meilleure, jamais la compacte par défaut.
+    const sameName = english.filter((v) => v.name === preferred).sort((a, b) => voiceTier(b) - voiceTier(a));
+    if (sameName.length) return sameName[0];
   }
   const ranked = rankVoices(voices, accent, pref);
   if (ranked.length) return ranked[0].voice;

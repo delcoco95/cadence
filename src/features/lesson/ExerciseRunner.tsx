@@ -85,14 +85,14 @@ export function ExerciseRunner({ items, context, lessonId, onExit, onFinish, ban
 
   const accent = settings?.accent ?? 'en-GB';
   const rate = settings?.speechRate ?? 0.9;
-  const voiceName = settings?.voiceName;
+  const voiceId = settings?.voiceId;
   const voiceGender = settings?.voiceGender ?? 'any';
   const say = useCallback(
     (text: string, slow?: boolean) => {
       onActivity?.();
-      speak(text, accent, { rate: slow ? 0.6 : rate, voice: { name: voiceName, gender: voiceGender } });
+      speak(text, accent, { rate: slow ? 0.6 : rate, voice: { id: voiceId, gender: voiceGender } });
     },
-    [accent, rate, voiceName, voiceGender, onActivity],
+    [accent, rate, voiceId, voiceGender, onActivity],
   );
 
   const current = queue[pos];

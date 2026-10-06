@@ -28,6 +28,9 @@ export function voicesFor(accent: Accent | 'en', pref: VoicePref['gender'] = 'an
   return rankVoices(voices, accent, pref);
 }
 
+/** Voix brutes de l'appareil (diagnostic). */
+export const allVoices = (): SpeechSynthesisVoice[] => voices;
+
 export interface SpeakOptions {
   rate?: number;
   voice?: VoicePref;
@@ -37,8 +40,10 @@ export function speak(text: string, accent: Accent, rateOrOptions: number | Spea
   if (!ttsAvailable()) return;
   const opts = typeof rateOrOptions === 'number' ? { rate: rateOrOptions } : rateOrOptions;
   speechSynthesis.cancel();
+  // iOS fournit parfois la liste des voix en retard, sans événement : on la relit avant de choisir.
+  if (voices.length === 0) loadVoices();
   const u = new SpeechSynthesisUtterance(text);
-  const voice = chooseVoice(voices, accent, opts.voice?.gender ?? 'any', opts.voice?.name);
+  const voice = chooseVoice(voices, accent, opts.voice?.gender ?? 'any', opts.voice?.id);
   if (voice) u.voice = voice;
   u.lang = voice?.lang ?? accent;
   u.rate = opts.rate ?? 0.9;

@@ -63,3 +63,36 @@ describe('repli d’accent', () => {
     expect(chooseVoice(windowsVoices, 'en-GB', 'any', 'Microsoft Mark - English (United States)')?.name).toContain('Mark');
   });
 });
+
+describe('iPhone : voix de même nom', () => {
+  // Sur iOS, la version téléchargée porte le même nom que la version compacte : seul le voiceURI les distingue.
+  const ios = [
+    { name: 'Samantha', lang: 'en-US', voiceURI: 'com.apple.voice.compact.en-US.Samantha' },
+    { name: 'Samantha', lang: 'en-US', voiceURI: 'com.apple.voice.enhanced.en-US.Samantha' },
+    { name: 'Ava', lang: 'en-US', voiceURI: 'com.apple.voice.premium.en-US.Ava' },
+    { name: 'Eddy', lang: 'en-US', voiceURI: 'com.apple.eloquence.en-US.Eddy' },
+    { name: 'Daniel', lang: 'en-GB', voiceURI: 'com.apple.voice.compact.en-GB.Daniel' },
+  ];
+
+  it('lit la qualité dans l’identifiant', () => {
+    expect(voiceTier(ios[0])).toBe(1);
+    expect(voiceTier(ios[1])).toBe(2);
+    expect(voiceTier(ios[2])).toBe(3);
+  });
+
+  it('écarte les voix Eloquence, très robotiques', () => {
+    expect(rankVoices(ios, 'en-US').map((r) => r.voice.voiceURI)).not.toContain('com.apple.eloquence.en-US.Eddy');
+  });
+
+  it('utilise exactement la voix choisie, pas sa version compacte', () => {
+    expect(chooseVoice(ios, 'en-US', 'any', 'com.apple.voice.enhanced.en-US.Samantha')?.voiceURI).toBe('com.apple.voice.enhanced.en-US.Samantha');
+  });
+
+  it('avec un ancien réglage (nom seul), prend la meilleure voix de ce nom', () => {
+    expect(chooseVoice(ios, 'en-US', 'any', 'Samantha')?.voiceURI).toBe('com.apple.voice.enhanced.en-US.Samantha');
+  });
+
+  it('sans choix, prend la meilleure voix de l’accent', () => {
+    expect(chooseVoice(ios, 'en-US')?.voiceURI).toBe('com.apple.voice.premium.en-US.Ava');
+  });
+});

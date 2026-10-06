@@ -83,7 +83,7 @@ export function LessonPlayer() {
     ping();
     speak(t, settings?.accent ?? 'en-GB', {
       rate: settings?.speechRate ?? 0.9,
-      voice: { name: settings?.voiceName, gender: settings?.voiceGender ?? 'any' },
+      voice: { id: settings?.voiceId, gender: settings?.voiceGender ?? 'any' },
     });
   };
   const speakCount = lesson.exercises.filter((e) => e.type === 'speak').length;
