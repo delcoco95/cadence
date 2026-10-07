@@ -7,22 +7,17 @@ import type { Evidence } from '../core/evidence';
 import type { ErrorTag } from '../content/types';
 import { replayAttempts } from './replay';
 import type { Gender } from '../core/gender';
-import type { VoiceGenderPref } from '../speech/voices';
 import type { CadenceVoice } from '../speech/audio';
 import type { UnitRecord } from '../core/units';
 import type { PlacementBand, PlacementResponse, PlacementResult } from '../core/placement';
 
 export type ThemePref = 'system' | 'light' | 'dark';
-export type Accent = 'en-US' | 'en-GB' | 'en-AU';
+/** Accent des voix Cadence (et langue de la reconnaissance vocale). */
+export type Accent = 'en-US' | 'en-GB';
 export type Motivation = 'travel' | 'work' | 'studies' | 'culture' | 'people' | 'brain';
 
 export interface VoicePref {
-  /** cadence : audio pré-généré, identique partout ; device : synthèse du téléphone */
-  source?: 'cadence' | 'device';
-  cadence?: CadenceVoice;
-  /** Identifiant de la voix choisie : voiceURI, ou nom pour les anciens réglages (absent : meilleure voix disponible) */
-  id?: string;
-  gender: VoiceGenderPref;
+  gender: CadenceVoice;
 }
 
 export interface Settings {
@@ -48,14 +43,10 @@ export interface Settings {
   theme: ThemePref;
   accent: Accent;
   speechRate: number;
-  /** Voix choisie : voiceURI (unique, contrairement au nom sur iPhone) */
-  voiceId?: string;
-  /** Ancien réglage (nom de voix), repris dans voiceId */
-  voiceName?: string;
-  voiceGender: VoiceGenderPref;
-  /** Voix de Cadence (pré-générées) ou voix du téléphone */
-  voiceSource: 'cadence' | 'device';
+  /** Voix Cadence : féminine ou masculine (dans l'accent choisi) */
   cadenceVoice: CadenceVoice;
+  /** L'accent a été choisi par l'apprenant (avant les voix britanniques, la valeur par défaut était en-GB sans effet) */
+  accentChosen?: boolean;
   /** Sons de réussite / d'erreur */
   soundEffects: boolean;
   /** Exercices oraux activés (micro) */
@@ -171,10 +162,8 @@ export const DEFAULT_SETTINGS: Settings = {
   blockingSetupDone: false,
   unlockShortcutName: 'Cadence Valider',
   theme: 'system',
-  accent: 'en-GB',
+  accent: 'en-US',
   speechRate: 0.9,
-  voiceGender: 'any',
-  voiceSource: 'cadence',
   cadenceVoice: 'female',
   soundEffects: true,
   speakingEnabled: true,
@@ -189,7 +178,8 @@ export async function getSettings(): Promise<Settings> {
   const merged = { ...DEFAULT_SETTINGS, ...(stored ?? { createdAt: Date.now() }) };
   return {
     ...merged,
-    voiceId: merged.voiceId ?? merged.voiceName,
+    // Ancien réglage par défaut (en-GB) ou australien : on garde la voix entendue jusqu'ici (Lily, américaine).
+    accent: merged.accentChosen ? (merged.accent === 'en-GB' ? 'en-GB' : 'en-US') : 'en-US',
     motivations: merged.motivations.length ? merged.motivations : merged.motivation ? [merged.motivation] : [],
   };
 }
@@ -199,12 +189,7 @@ export async function updateSettings(patch: Partial<Omit<Settings, 'id'>>): Prom
   await db.settings.put({ ...current, ...patch, id: 'me' });
 }
 
-export const voicePref = (s: Pick<Settings, 'voiceId' | 'voiceGender' | 'voiceSource' | 'cadenceVoice'>): VoicePref => ({
-  id: s.voiceId,
-  gender: s.voiceGender,
-  source: s.voiceSource,
-  cadence: s.cadenceVoice,
-});
+export const voicePref = (s: Pick<Settings, 'cadenceVoice'>): VoicePref => ({ gender: s.cadenceVoice });
 
 /** Demande à Safari de ne pas effacer les données (PWA installée). */
 export async function requestPersistentStorage(): Promise<boolean> {

@@ -151,7 +151,7 @@ export function PlacementTest() {
             onChange={setAnswer}
             onSubmit={() => submit()}
             say={say}
-            lang={settings?.accent ?? 'en-GB'}
+            lang={settings?.accent ?? 'en-US'}
             onSkipSpeaking={() => undefined}
             shuffleSeed={`${item.id}-${startedAt.current}`}
           />

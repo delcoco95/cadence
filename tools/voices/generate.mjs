@@ -9,7 +9,8 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { fork } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-export const VOICES = ['af_heart', 'am_michael'];
+// Lily, Michael (américain) ; Emma, George (britannique)
+export const VOICES = ['af_heart', 'am_michael', 'bf_emma', 'bm_george'];
 // Mesuré : 4 processus de 2 cœurs vont ~4× plus vite que 3 processus qui se disputent tous les cœurs.
 const WORKERS = 4;
 const THREADS_PER_WORKER = '2';
@@ -18,11 +19,14 @@ const corpus = JSON.parse(readFileSync(new URL('./corpus.json', import.meta.url)
 const args = process.argv.slice(2);
 
 function writeManifest() {
-  // Une clé n'est listée que si l'audio existe pour TOUTES les voix : sinon l'app reste sur la synthèse du téléphone.
-  const sets = VOICES.map((v) => new Set(existsSync(OUT + v) ? readdirSync(OUT + v).map((f) => f.replace('.mp3', '')) : []));
-  const keys = corpus.map((c) => c.key).filter((k) => sets.every((s) => s.has(k)));
-  writeFileSync(OUT + 'manifest.json', JSON.stringify({ voices: VOICES, keys }));
-  console.log(`manifeste : ${keys.length} / ${corpus.length} textes disponibles`);
+  // Liste par voix : une voix encore en cours de génération ne prive pas les autres de leurs fichiers.
+  const voices = {};
+  for (const v of VOICES) {
+    const files = new Set(existsSync(OUT + v) ? readdirSync(OUT + v).map((f) => f.replace('.mp3', '')) : []);
+    voices[v] = corpus.map((c) => c.key).filter((k) => files.has(k));
+  }
+  writeFileSync(OUT + 'manifest.json', JSON.stringify({ version: 2, voices }));
+  console.log(`manifeste : ${VOICES.map((v) => `${v} ${voices[v].length}`).join(' · ')} / ${corpus.length} textes`);
 }
 
 if (args[0] === '--manifest') {

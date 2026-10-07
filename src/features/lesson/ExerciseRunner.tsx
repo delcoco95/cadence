@@ -83,7 +83,7 @@ export function ExerciseRunner({ items, context, lessonId, onExit, onFinish, ban
   const startedAt = useRef(Date.now());
   const sessionStart = useRef(Date.now());
 
-  const accent = settings?.accent ?? 'en-GB';
+  const accent = settings?.accent ?? 'en-US';
   const say = useSpeaker(onActivity);
 
   const current = queue[pos];
