@@ -1,7 +1,8 @@
 import { db, updateSettings, type PlacementRecord } from './db';
-import { UNITS } from '../content';
+import { LEVELS_OF_COURSE, UNITS } from '../content';
 import { pathState, unitsValidatedByJump, CHALLENGE_PASS, type PathState, type Step, type UnitRecord } from '../core/units';
 import type { PlacementResponse, PlacementResult } from '../core/placement';
+import type { Lang } from '../content/types';
 import { addActivity } from './activity';
 
 export async function loadPath(): Promise<PathState> {
@@ -97,7 +98,14 @@ export async function applyPlacement(id: number): Promise<void> {
 
 export type LevelChoice = 'test' | 'A1' | 'A2' | 'B1' | 'B2' | 'C1';
 
-export const LEVEL_CHOICES: { value: LevelChoice; label: string; hint: string; tone: string }[] = [
+export interface LevelChoiceInfo {
+  value: LevelChoice;
+  label: string;
+  hint: string;
+  tone: string;
+}
+
+export const LEVEL_CHOICES: LevelChoiceInfo[] = [
   { value: 'test', label: 'Je passe le test de niveau', hint: 'Recommandé · 10 min, adaptatif, sur le modèle des tests officiels', tone: 'tone-sun' },
   { value: 'A1', label: 'Débutant', hint: 'Je connais quelques mots et phrases toutes faites', tone: 'tone-success' },
   { value: 'A2', label: 'Élémentaire', hint: 'Je me débrouille avec des phrases simples', tone: 'tone-sky' },
@@ -106,15 +114,22 @@ export const LEVEL_CHOICES: { value: LevelChoice; label: string; hint: string; t
   { value: 'C1', label: 'Expérimenté', hint: 'Je m’exprime avec aisance, même dans un cadre exigeant', tone: 'tone-teal' },
 ];
 
+/** Choix proposés pour une langue : l'italien et l'espagnol commencent à zéro (A1), l'anglais à A2. */
+export function levelChoices(lang: Lang): LevelChoiceInfo[] {
+  if (lang === 'en') return LEVEL_CHOICES;
+  return LEVEL_CHOICES.map((c) => (c.value === 'A1' ? { ...c, label: 'Grand débutant', hint: 'Je pars de zéro, ou presque' } : c));
+}
+
 /**
- * Niveau déclaré par l'apprenant : le parcours démarre au début de ce niveau. Les unités des niveaux
- * inférieurs sont ouvertes (marquées « niveau choisi », sans prétendre qu'elles ont été prouvées) :
- * leurs défis restent disponibles pour vérifier.
+ * Niveau déclaré par l'apprenant (pour la langue active) : le parcours démarre au début de ce niveau.
+ * Les unités des niveaux inférieurs sont ouvertes (marquées « niveau choisi », sans prétendre qu'elles
+ * ont été prouvées) : leurs défis restent disponibles pour vérifier.
  */
 export async function applyChosenLevel(level: Exclude<LevelChoice, 'test'>): Promise<void> {
-  const start = level === 'A1' ? 'A2' : level;
+  const order = LEVELS_OF_COURSE;
+  // Un niveau absent du cours (A1 en anglais) démarre au premier niveau.
+  const start = order.includes(level) ? level : order[0];
   await updateSettings({ estimatedBand: level, startLevel: start });
-  const order = ['A2', 'B1', 'B2', 'C1', 'C2'];
   const below = UNITS.filter((u) => order.indexOf(u.cefr) < order.indexOf(start));
   if (!below.length) return;
   const now = Date.now();

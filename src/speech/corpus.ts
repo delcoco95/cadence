@@ -1,14 +1,13 @@
 import type { Exercise } from '../content/types';
-import { CHECKPOINTS, IRREGULAR_VERBS, LESSONS, VOCAB } from '../content';
-import { PLACEMENT_ITEMS } from '../content/placement';
+import { CHECKPOINTS, IRREGULAR_VERBS, LESSONS, PLACEMENT, VOCAB } from '../content';
+import { activeLanguage } from '../core/lang';
 import { irregularExercise, irregularIntro, vocabExercise, vocabIntro, type IrregularMode, type VocabMode } from '../core/generators';
 import { reformat } from '../core/retry';
 import { speechKey } from './audioKey';
-import { VOICE_SAMPLE } from './audio';
 
 /**
- * Tous les textes que l'app peut lire à voix haute. Sert à pré-générer l'audio (tools/voices)
- * et, dans les tests, à vérifier qu'aucun texte lu n'a été oublié.
+ * Tous les textes que l'app peut lire à voix haute dans le cours actif. Sert à pré-générer l'audio
+ * (tools/voices) et, dans les tests, à vérifier qu'aucun texte lu n'a été oublié.
  */
 
 function exerciseTexts(e: Exercise): string[] {
@@ -24,13 +23,13 @@ const VOCAB_MODES: VocabMode[] = ['en_fr', 'listen', 'fr_en', 'cloze', 'say'];
 const IRREGULAR_MODES: IrregularMode[] = ['past', 'participle', 'three', 'say'];
 
 export function speechCorpus(): string[] {
-  const texts: string[] = [VOICE_SAMPLE];
+  const texts: string[] = [activeLanguage().voiceSample];
   for (const l of LESSONS) {
     for (const e of l.exercises) texts.push(...exerciseTexts(e));
     for (const s of l.explanation) for (const ex of s.examples ?? []) texts.push(ex.en);
   }
   for (const e of Object.values(CHECKPOINTS).flat()) texts.push(...exerciseTexts(e));
-  for (const e of PLACEMENT_ITEMS) texts.push(...exerciseTexts(e));
+  for (const e of PLACEMENT) texts.push(...exerciseTexts(e));
   for (const v of VOCAB) {
     texts.push(vocabIntro(v).speak);
     for (const m of VOCAB_MODES) texts.push(...exerciseTexts(vocabExercise(v, VOCAB, m)));

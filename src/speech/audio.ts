@@ -1,4 +1,6 @@
 import { speechKey } from './audioKey';
+import type { Lang } from '../content/types';
+import { LANGUAGES } from '../content/languages';
 
 /**
  * Voix de Cadence : audio pré-généré (Kokoro, tools/voices), identique sur tous les téléphones.
@@ -6,7 +8,8 @@ import { speechKey } from './audioKey';
  */
 
 export type CadenceVoice = 'female' | 'male';
-export type CadenceAccent = 'en-US' | 'en-GB';
+/** Langue et accent d'une voix : sert aussi à la reconnaissance vocale. */
+export type CadenceAccent = 'en-US' | 'en-GB' | 'it-IT' | 'es-ES';
 
 export interface CadenceVoiceInfo {
   id: string;
@@ -23,12 +26,31 @@ export const CADENCE_VOICES: Record<CadenceAccent, Record<CadenceVoice, CadenceV
     female: { id: 'bf_emma', name: 'Emma', label: 'Voix féminine' },
     male: { id: 'bm_george', name: 'George', label: 'Voix masculine' },
   },
+  'it-IT': {
+    female: { id: 'if_sara', name: 'Sara', label: 'Voix féminine' },
+    male: { id: 'im_nicola', name: 'Nicola', label: 'Voix masculine' },
+  },
+  'es-ES': {
+    female: { id: 'ef_dora', name: 'Dora', label: 'Voix féminine' },
+    male: { id: 'em_alex', name: 'Alex', label: 'Voix masculine' },
+  },
 };
 
-export const ACCENT_LABELS: Record<CadenceAccent, string> = { 'en-US': 'Américain', 'en-GB': 'Britannique' };
+/** Accents au choix en anglais ; l'italien et l'espagnol n'en ont qu'un. */
+export const ACCENT_LABELS: Partial<Record<CadenceAccent, string>> = { 'en-US': 'Américain', 'en-GB': 'Britannique' };
+export const ACCENT_NAMES: Record<CadenceAccent, string> = {
+  'en-US': 'anglais américain',
+  'en-GB': 'anglais britannique',
+  'it-IT': 'italien',
+  'es-ES': 'espagnol d’Espagne',
+};
+
+/** Voix d'une langue : l'accent choisi en anglais, l'accent unique sinon. */
+export const speechLocale = (lang: Lang, englishAccent: 'en-US' | 'en-GB'): CadenceAccent =>
+  lang === 'it' ? 'it-IT' : lang === 'es' ? 'es-ES' : englishAccent;
 
 /** Phrase d'écoute du choix de voix (incluse dans le corpus généré). */
-export const VOICE_SAMPLE = 'Hello! Welcome to Cadence. Let’s learn English together.';
+export const voiceSample = (accent: CadenceAccent) => LANGUAGES[accent === 'it-IT' ? 'it' : accent === 'es-ES' ? 'es' : 'en'].voiceSample;
 
 const BASE = 'audio/';
 /** Clés disponibles par voix (manifeste v2) ; v1 listait les clés communes à toutes les voix. */
@@ -93,13 +115,18 @@ async function blobUrl(url: string): Promise<string> {
 }
 
 /**
- * Joue le clip d'un texte avec la voix demandée ; si cette voix n'a pas encore le fichier, la même voix
- * (femme ou homme) de l'autre accent prend le relais. Renvoie false si aucun clip n'existe.
+ * Joue le clip d'un texte avec la voix demandée ; si cette voix n'a pas encore le fichier, l'autre voix
+ * de la même langue prend le relais (en anglais : d'abord la même voix de l'autre accent).
+ * Renvoie false si aucun clip n'existe.
  */
 export async function playClip(text: string, accent: CadenceAccent, gender: CadenceVoice, rate = 1): Promise<boolean> {
   await manifest;
-  const other: CadenceAccent = accent === 'en-US' ? 'en-GB' : 'en-US';
-  const voice = [CADENCE_VOICES[accent][gender], CADENCE_VOICES[other][gender]].find((v) => hasClip(text, v.id));
+  const other: CadenceVoice = gender === 'female' ? 'male' : 'female';
+  const candidates =
+    accent === 'en-US' || accent === 'en-GB'
+      ? [CADENCE_VOICES[accent][gender], CADENCE_VOICES[accent === 'en-US' ? 'en-GB' : 'en-US'][gender]]
+      : [CADENCE_VOICES[accent][gender], CADENCE_VOICES[accent][other]];
+  const voice = candidates.find((v) => hasClip(text, v.id));
   if (!voice) return false;
   try {
     const p = getPlayer();

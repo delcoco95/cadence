@@ -13,9 +13,12 @@ import { formatMinutes } from '../../ui/format';
 import { ProgressBar } from '../../ui/ProgressBar';
 import { sfx } from '../../ui/sfx';
 import {
-  BoltIcon, BookIcon, BrainIcon, ChevronIcon, ClockIcon, CrownIcon, FlameIcon, LetterIcon, LockIcon, StarIcon, TrophyIcon,
+  BoltIcon, BookIcon, BrainIcon, CheckIcon, ChevronIcon, ClockIcon, CrownIcon, FlameIcon, LetterIcon, LockIcon, StarIcon, TrophyIcon,
 } from '../../ui/Icons';
 import { VoicePicker } from './VoicePicker';
+import { LANGUAGES } from '../../content/languages';
+import { LANGS } from '../../content/types';
+import { Flag } from '../../ui/language';
 
 export const GOAL_OPTIONS = [5, 10, 15, 20, 30];
 
@@ -107,6 +110,36 @@ export function Profile() {
           </Link>
         </div>
       </header>
+
+      <h3 className="group-title">Mes langues</h3>
+      <section className="card stack" style={{ gap: 8 }}>
+        {LANGS.map((l) => {
+          const course = settings.courses[l];
+          const selected = settings.language === l;
+          return (
+            <button
+              key={l}
+              className={`option${selected ? ' selected' : ''}`}
+              aria-pressed={selected}
+              onClick={() => {
+                if (selected) return;
+                sfx.tap();
+                void updateSettings({ language: l });
+              }}
+            >
+              <Flag lang={l} size={30} />
+              <span className="grow" style={{ textAlign: 'left' }}>
+                {LANGUAGES[l].label}
+                <span className="note" style={{ display: 'block', fontWeight: 600 }}>
+                  {course ? `Niveau ${course.estimatedBand ?? course.startLevel}${selected ? ' · en cours' : ''}` : 'Commencer cette langue'}
+                </span>
+              </span>
+              {selected && <CheckIcon style={{ width: 22, height: 22, color: 'var(--primary)', flex: 'none' }} />}
+            </button>
+          );
+        })}
+        <p className="note">Ta série, ton objectif du jour et ton XP sont communs. Leçons, révisions et niveau sont propres à chaque langue.</p>
+      </section>
 
       {stats && (
         <section className="stats">

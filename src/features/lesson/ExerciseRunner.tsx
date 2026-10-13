@@ -17,6 +17,7 @@ import { comboText, nudge, praise, useProfileText, type ProfileText } from '../.
 import { sfx } from '../../ui/sfx';
 import { ExerciseView } from './ExerciseView';
 import { AudioPrompt } from './AudioPrompt';
+import { speechLocale } from '../../speech/audio';
 
 export interface RunSummary {
   /** Réussite moyenne au premier essai, 0..1 */
@@ -83,7 +84,7 @@ export function ExerciseRunner({ items, context, lessonId, onExit, onFinish, ban
   const startedAt = useRef(Date.now());
   const sessionStart = useRef(Date.now());
 
-  const accent = settings?.accent ?? 'en-US';
+  const accent = speechLocale(settings?.language ?? 'en', settings?.accent ?? 'en-US');
   const say = useSpeaker(onActivity);
 
   const current = queue[pos];

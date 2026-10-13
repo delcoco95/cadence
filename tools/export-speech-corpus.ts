@@ -1,11 +1,18 @@
 /**
- * npm run speech-corpus — écrit tools/voices/corpus.json : tous les textes lus par l'app,
- * avec leur clé de fichier audio. À relancer après chaque ajout de contenu, puis générer l'audio.
+ * npm run speech-corpus — écrit, pour chaque cours, tous les textes lus par l'app avec leur clé de fichier audio :
+ * tools/voices/corpus.json (anglais), corpus-it.json, corpus-es.json.
+ * À relancer après chaque ajout de contenu, puis générer l'audio.
  */
 import { writeFileSync } from 'node:fs';
+import { activateCourse, loadCourse } from '../src/content';
 import { speechCorpus } from '../src/speech/corpus';
 import { speechKey } from '../src/speech/audioKey';
+import { LANGS } from '../src/content/types';
 
-const corpus = speechCorpus().map((text) => ({ key: speechKey(text), text }));
-writeFileSync(new URL('./voices/corpus.json', import.meta.url), JSON.stringify(corpus, null, 1));
-console.log(`${corpus.length} textes → tools/voices/corpus.json`);
+for (const lang of LANGS) {
+  activateCourse(await loadCourse(lang));
+  const corpus = speechCorpus().map((text) => ({ key: speechKey(text), text }));
+  const file = lang === 'en' ? 'corpus.json' : `corpus-${lang}.json`;
+  writeFileSync(new URL(`./voices/${file}`, import.meta.url), JSON.stringify(corpus, null, 1));
+  console.log(`${lang} : ${corpus.length} textes → tools/voices/${file}`);
+}

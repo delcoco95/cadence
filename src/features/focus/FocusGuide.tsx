@@ -41,7 +41,7 @@ const STEPS: Step[] = [
         <code>.txt</code>. Désactive <i>Afficher le sélecteur de documents</i> et <i>Erreur si introuvable</i>.
       </>,
       <>Ajoute <b>Si</b> : <i>Fichier</i> <b>n’a aucune valeur</b>.</>,
-      <>Dans le « Si », ajoute <b>Afficher la notification</b> : <code>🔒 Fais d’abord ta session d’anglais sur Cadence</code>.</>,
+      <>Dans le « Si », ajoute <b>Afficher la notification</b> : <code>🔒 Fais d’abord ta session sur Cadence</code>.</>,
       <>Toujours dans le « Si », ajoute <b>Aller à l’écran d’accueil</b>.</>,
     ],
   },
@@ -65,7 +65,7 @@ export function FocusGuide({ onDone, doneLabel = 'J’ai tout configuré' }: { o
       <div className="card stack">
         <h3>Comment ça marche</h3>
         <p className="small">
-          Chaque jour à minuit, les apps que tu choisis sont bloquées. Quand ta session d’anglais est faite, un bouton
+          Chaque jour à minuit, les apps que tu choisis sont bloquées. Quand ta session du jour est faite, un bouton
           <b> Débloquer mes apps</b> les libère jusqu’au lendemain.
         </p>
         <p className="small muted">

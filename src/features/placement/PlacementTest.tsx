@@ -1,7 +1,9 @@
 import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PLACEMENT_ITEMS, type PlacementExercise } from '../../content/placement';
-import { UNITS } from '../../content';
+import type { PlacementExercise } from '../../content/placement';
+import { COURSE, PLACEMENT, UNITS } from '../../content';
+import { LANGUAGES } from '../../content/languages';
+import { speechLocale } from '../../speech/audio';
 import { gradeExercise, type ExerciseResponse } from '../../core/exercise';
 import {
   MAX_ITEMS, SECTIONS, nextPlacementItem, placementResult, type PlacementResponse, type PlacementResult, type PlacementSection,
@@ -49,7 +51,7 @@ export function PlacementTest() {
 
   const say = useSpeaker(ping);
 
-  const pool = useMemo(() => PLACEMENT_ITEMS.map((e) => ({ ...e.placement, exercise: e })), []);
+  const pool = useMemo(() => PLACEMENT.map((e) => ({ ...e.placement, exercise: e })), []);
 
   function advance(nextResponses: PlacementResponse[]) {
     const next = nextPlacementItem(nextResponses, pool);
@@ -64,7 +66,7 @@ export function PlacementTest() {
   }
 
   async function finish(all: PlacementResponse[]) {
-    const r = placementResult(all, UNITS);
+    const r = placementResult(all, UNITS, COURSE.placementUnitLevels);
     const id = await savePlacement(r, all);
     sfx.complete();
     setResult({ result: r, id });
@@ -97,7 +99,7 @@ export function PlacementTest() {
           <Mascot mood="think" size={130} />
           <h1>Test de niveau</h1>
           <p className="muted" style={{ fontWeight: 700 }}>
-            {profile.t('{Prêt|Prête|Prêt·e}')} à découvrir ton niveau d’anglais ? Le test s’adapte à toi : plus tu réussis, plus les questions montent en niveau.
+            {profile.t('{Prêt|Prête|Prêt·e}')} à découvrir ton niveau d’{LANGUAGES[COURSE.lang].name} ? Le test s’adapte à toi : plus tu réussis, plus les questions montent en niveau.
           </p>
           <div className="card stack" style={{ textAlign: 'left', width: '100%', gap: 10 }}>
             <div className="row"><span className="icon-tile tone-primary"><ClockIcon /></span><p className="small"><b>Environ 10 minutes</b>, {MAX_ITEMS} questions au plus, en 4 parties.</p></div>
@@ -151,7 +153,7 @@ export function PlacementTest() {
             onChange={setAnswer}
             onSubmit={() => submit()}
             say={say}
-            lang={settings?.accent ?? 'en-US'}
+            lang={speechLocale(COURSE.lang, settings?.accent ?? 'en-US')}
             onSkipSpeaking={() => undefined}
             shuffleSeed={`${item.id}-${startedAt.current}`}
           />

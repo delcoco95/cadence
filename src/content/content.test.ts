@@ -4,7 +4,9 @@ import { KC_LABELS } from './kcs';
 import { gradeExercise } from '../core/exercise';
 import { vocabExercise, irregularExercise } from '../core/generators';
 import { KCS } from './kcs';
-import { validateContent } from './validate';
+import { referenceResponse, validateContent } from './validate';
+import { activateCourse, loadCourse } from './index';
+import { ENGLISH } from './english';
 
 describe('content validator', () => {
   it('reports no blocking error', () => {
@@ -94,4 +96,27 @@ describe('content integrity', () => {
           expect(gradeExercise(e, { kind: 'text', value: e.accepted[0] }).verdict, `${v.id} ${mode}`).toBe('correct');
       }
   });
+});
+
+describe('cours d’italien et d’espagnol', () => {
+  for (const lang of ['it', 'es'] as const) {
+    it(`${lang} : aucune erreur bloquante, tous les niveaux de A1 à C2`, async () => {
+      const course = await loadCourse(lang);
+      activateCourse(course);
+      try {
+        const report = validateContent({
+          lessons: course.lessons, units: course.units, kcs: course.kcs, vocab: course.vocab, irregulars: course.verbs,
+          path: course.units.flatMap((u) => u.lessonIds), checkpoints: course.checkpoints, placement: course.placement, lang,
+          themes: course.themes, motivationThemes: course.motivationThemes,
+        });
+        expect(report.issues.filter((i) => i.level === 'error')).toEqual([]);
+        expect(course.levels).toEqual(['A1', 'A2', 'B1', 'B2', 'C1', 'C2']);
+        for (const v of course.vocab.slice(0, 50))
+          for (const mode of ['en_fr', 'fr_en', 'cloze'] as const) expect(gradeExercise(vocabExercise(v, course.vocab, mode), referenceResponse(vocabExercise(v, course.vocab, mode))!).verdict, v.id).toBe('correct');
+      } finally {
+        activateCourse(ENGLISH);
+      }
+      // Un cours complet se valide en quelques secondes, davantage quand la machine génère les voix.
+    }, 60_000);
+  }
 });

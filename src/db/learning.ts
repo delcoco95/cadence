@@ -1,5 +1,5 @@
 import { db, getSettings, type Attempt } from './db';
-import { CHECKPOINTS, EXERCISES_BY_KC, IRREGULAR_VERBS, UNITS, VOCAB, getLesson, irregularById, vocabById } from '../content';
+import { CHECKPOINTS, COURSE, EXERCISES_BY_KC, IRREGULAR_VERBS, LEVELS_OF_COURSE, UNITS, VOCAB, getLesson, irregularById, vocabById } from '../content';
 import { CEFR_LEVELS } from '../content/types';
 import { loadPath } from './units';
 import type { ErrorTag, Exercise, IrregularVerb, Lesson } from '../content/types';
@@ -235,7 +235,7 @@ export async function prepareSession(focus: Focus, budgetSeconds: number): Promi
   const [cards, seen, today, weakKcs] = await Promise.all([db.srsCards.toArray(), seenMap(), introducedToday(), focusKcs()]);
   const known = new Set(cards.map((c) => c.id));
   // Nouveaux mots : jusqu'au niveau de l'étape en cours du parcours (pas de vocabulaire C1 à un débutant).
-  const levelIndex = CEFR_LEVELS.indexOf((await currentLevel()) ?? 'A2');
+  const levelIndex = CEFR_LEVELS.indexOf((await currentLevel()) ?? LEVELS_OF_COURSE[0]);
   const levelVocab = VOCAB.filter((v) => CEFR_LEVELS.indexOf(v.cefr) <= levelIndex);
 
   const typeAllowed = (t: SrsItemType) =>
@@ -253,7 +253,7 @@ export async function prepareSession(focus: Focus, budgetSeconds: number): Promi
 
   const newWords: NewItem[] =
     focus === 'all' || focus === 'vocab'
-      ? prioritizeByMotivation(levelVocab, settings.motivations).filter((v) => !known.has(cardId('vocab', v.id)))
+      ? prioritizeByMotivation(levelVocab, settings.motivations, COURSE.motivationThemes).filter((v) => !known.has(cardId('vocab', v.id)))
           .slice(0, Math.max(0, (focus === 'vocab' ? settings.newWordsPerDay * 2 : settings.newWordsPerDay) - today.vocab))
           .map((v) => ({ cardId: cardId('vocab', v.id), intro: vocabIntro(v), exercise: vocabExercise(v, VOCAB, 'en_fr', seed) }))
       : [];

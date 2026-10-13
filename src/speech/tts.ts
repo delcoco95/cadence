@@ -1,6 +1,6 @@
-import type { Accent, VoicePref } from '../db/db';
+import type { VoicePref } from '../db/db';
 import { chooseVoice } from './voices';
-import { playClip, stopClip } from './audio';
+import { playClip, stopClip, type CadenceAccent } from './audio';
 
 let voices: SpeechSynthesisVoice[] = [];
 // Chrome peut libérer l'énoncé en cours (et couper la phrase) si rien ne le référence.
@@ -33,7 +33,7 @@ export function stopSpeaking(): void {
  * La synthèse du téléphone n'est qu'un secours invisible, pour un texte qui n'aurait pas encore de fichier.
  * Le débit 0,9 (« normal ») correspond à la vitesse naturelle des voix Cadence, déjà posées.
  */
-export function speak(text: string, accent: Accent, opts: SpeakOptions = {}): void {
+export function speak(text: string, accent: CadenceAccent, opts: SpeakOptions = {}): void {
   stopSpeaking();
   const gender = opts.voice?.gender ?? 'female';
   const rate = Math.min(1.1, (opts.rate ?? 0.9) / 0.9);
@@ -42,7 +42,7 @@ export function speak(text: string, accent: Accent, opts: SpeakOptions = {}): vo
   });
 }
 
-function speakDevice(text: string, accent: Accent, gender: VoicePref['gender'], rate: number): void {
+function speakDevice(text: string, accent: CadenceAccent, gender: VoicePref['gender'], rate: number): void {
   if (!ttsAvailable()) return;
   // iOS fournit parfois la liste des voix en retard, sans événement : on la relit avant de choisir.
   if (voices.length === 0) loadVoices();

@@ -1,5 +1,6 @@
 /**
- * Génère l'audio de tous les textes de corpus.json avec les voix Kokoro de Cadence.
+ * Génère l'audio anglais (corpus.json) avec les voix Kokoro de Cadence (kokoro-js).
+ * L'italien et l'espagnol sont générés par generate_it_es.py (Kokoro en Python), qui réécrit ensuite le manifeste ici.
  *   node generate.mjs            → lance 4 processus en parallèle, puis écrit le manifeste
  *   node generate.mjs --manifest → réécrit seulement le manifeste
  * Reprise automatique : un fichier déjà généré n'est pas refait (on peut interrompre et relancer).
@@ -11,6 +12,12 @@ import { fileURLToPath } from 'node:url';
 
 // Lily, Michael (américain) ; Emma, George (britannique)
 export const VOICES = ['af_heart', 'am_michael', 'bf_emma', 'bm_george'];
+// Voix de chaque corpus, pour le manifeste : Sara, Nicola (italien) ; Dora, Alex (espagnol)
+const MANIFEST = {
+  'corpus.json': VOICES,
+  'corpus-it.json': ['if_sara', 'im_nicola'],
+  'corpus-es.json': ['ef_dora', 'em_alex'],
+};
 // Mesuré : 4 processus de 2 cœurs vont ~4× plus vite que 3 processus qui se disputent tous les cœurs.
 const WORKERS = 4;
 const THREADS_PER_WORKER = '2';
@@ -21,12 +28,17 @@ const args = process.argv.slice(2);
 function writeManifest() {
   // Liste par voix : une voix encore en cours de génération ne prive pas les autres de leurs fichiers.
   const voices = {};
-  for (const v of VOICES) {
-    const files = new Set(existsSync(OUT + v) ? readdirSync(OUT + v).map((f) => f.replace('.mp3', '')) : []);
-    voices[v] = corpus.map((c) => c.key).filter((k) => files.has(k));
+  for (const [file, list] of Object.entries(MANIFEST)) {
+    const url = new URL(`./${file}`, import.meta.url);
+    if (!existsSync(url)) continue;
+    const keys = JSON.parse(readFileSync(url, 'utf8')).map((c) => c.key);
+    for (const v of list) {
+      const files = new Set(existsSync(OUT + v) ? readdirSync(OUT + v).map((f) => f.replace('.mp3', '')) : []);
+      voices[v] = keys.filter((k) => files.has(k));
+    }
+    console.log(`manifeste ${file} : ${list.map((v) => `${v} ${voices[v].length}`).join(' · ')} / ${keys.length} textes`);
   }
   writeFileSync(OUT + 'manifest.json', JSON.stringify({ version: 2, voices }));
-  console.log(`manifeste : ${VOICES.map((v) => `${v} ${voices[v].length}`).join(' · ')} / ${corpus.length} textes`);
 }
 
 if (args[0] === '--manifest') {

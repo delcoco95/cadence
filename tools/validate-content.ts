@@ -1,12 +1,32 @@
 /**
- * npm run validate-content — validation pédagogique du contenu.
+ * npm run validate-content [-- en|it|es] — validation pédagogique du contenu d'un cours (anglais par défaut).
  * Code de sortie 1 s'il y a des erreurs (utilisable en CI).
  */
-import { LESSONS, UNITS, PATH, VOCAB, IRREGULAR_VERBS } from '../src/content';
-import { KCS } from '../src/content/kcs';
+import { activateCourse, loadCourse, PATH } from '../src/content';
 import { validateContent, type Issue } from '../src/content/validate';
+import { LANGUAGES } from '../src/content/languages';
+import type { Lang } from '../src/content/types';
 
-const report = validateContent({ lessons: LESSONS, units: UNITS, kcs: KCS, vocab: VOCAB, irregulars: IRREGULAR_VERBS, path: PATH });
+const lang = (process.argv[2] ?? 'en') as Lang;
+if (!LANGUAGES[lang]) {
+  console.error(`Langue inconnue : ${lang} (en, it ou es)`);
+  process.exit(2);
+}
+const course = await loadCourse(lang);
+activateCourse(course);
+const report = validateContent({
+  lessons: course.lessons,
+  units: course.units,
+  kcs: course.kcs,
+  vocab: course.vocab,
+  irregulars: course.verbs,
+  path: PATH,
+  checkpoints: course.checkpoints,
+  placement: course.placement,
+  lang,
+  themes: course.themes,
+  motivationThemes: course.motivationThemes,
+});
 const errors = report.issues.filter((i) => i.level === 'error');
 const warnings = report.issues.filter((i) => i.level === 'warning');
 
@@ -17,9 +37,20 @@ const group = (list: Issue[]) => {
     console.log(`   ${message} (${where.length}) : ${where.slice(0, 6).join(', ')}${where.length > 6 ? ', …' : ''}`);
 };
 
-console.log('\nValidation du contenu Cadence\n');
-console.log(`✓ ${report.validExercises} / ${report.exercises} exercices valides`);
-console.log(`  ${LESSONS.length} leçons · ${UNITS.length} unités · ${KCS.length} notions · ${VOCAB.length} mots · ${IRREGULAR_VERBS.length} verbes`);
+console.log(`\nValidation du contenu Cadence · ${LANGUAGES[lang].label}\n`);
+console.log(`✓ ${report.validExercises} / ${report.exercises} exercices valides (leçons, défis, test de niveau)`);
+console.log(
+  `  ${course.lessons.length} leçons · ${course.units.length} unités · ${course.kcs.length} notions · ${course.vocab.length} mots · ` +
+    `${course.verbs.length} verbes · ${course.placement.length} items de test`,
+);
+for (const level of course.levels) {
+  const lessons = course.lessons.filter((l) => l.cefr === level);
+  const exercises = lessons.reduce((a, l) => a + l.exercises.length, 0);
+  const units = course.units.filter((u) => u.cefr === level);
+  const challenge = units.reduce((a, u) => a + (course.checkpoints[u.id]?.length ?? 0), 0);
+  const vocab = course.vocab.filter((v) => v.cefr === level).length;
+  console.log(`  ${level} : ${units.length} unités · ${lessons.length} leçons · ${exercises} exercices · ${challenge} items de défi · ${vocab} mots`);
+}
 if (warnings.length) {
   console.log(`⚠ ${warnings.length} élément(s) à relire`);
   group(warnings);
@@ -29,4 +60,4 @@ if (errors.length) {
   group(errors);
   process.exit(1);
 }
-console.log(errors.length ? '' : '\nAucune erreur bloquante.');
+console.log('\nAucune erreur bloquante.');

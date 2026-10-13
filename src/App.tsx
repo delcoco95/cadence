@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { HashRouter, NavLink, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { useSettings } from './db/hooks';
 import { Onboarding } from './features/onboarding/Onboarding';
@@ -14,6 +14,11 @@ import { PlacementTest } from './features/placement/PlacementTest';
 import { UnitStepPlayer } from './features/unit/UnitStepPlayer';
 import { DumbbellIcon, HomeIcon, PathIcon, ProfileIcon } from './ui/Icons';
 import { setSoundEnabled } from './ui/sfx';
+import { CourseSetup } from './features/onboarding/CourseSetup';
+import { activateCourse, loadCourse } from './content';
+import { setLearningLanguage } from './db/db';
+import type { Lang } from './content/types';
+import { LangContext } from './ui/language';
 
 function TabBar() {
   const tab = ({ isActive }: { isActive: boolean }) => (isActive ? 'active' : '');
@@ -59,6 +64,23 @@ function UnitRoute() {
 
 export function App() {
   const settings = useSettings();
+  // Langue dont le cours et la base de progression sont actifs (chargement asynchrone pour l'italien et l'espagnol).
+  const [active, setActive] = useState<Lang | null>(null);
+  const language = settings?.language;
+
+  useEffect(() => {
+    if (!language) return;
+    let cancelled = false;
+    void loadCourse(language).then((course) => {
+      if (cancelled) return;
+      activateCourse(course);
+      setLearningLanguage(language);
+      setActive(language);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [language]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -72,22 +94,32 @@ export function App() {
 
   if (!settings) return null;
   if (!settings.onboarded) return <Onboarding />;
+  if (active !== settings.language) return null;
+  if (!settings.courses[settings.language])
+    return (
+      <LangContext.Provider value={active}>
+        <CourseSetup settings={settings} />
+      </LangContext.Provider>
+    );
 
   return (
-    <HashRouter>
-      <Routes>
-        <Route path="/" element={<WithTabs><Home /></WithTabs>} />
-        <Route path="/path" element={<WithTabs><PathScreen /></WithTabs>} />
-        <Route path="/practice" element={<WithTabs><PracticeHub /></WithTabs>} />
-        <Route path="/profile" element={<WithTabs><Profile /></WithTabs>} />
-        <Route path="/lesson/:lessonId" element={<LessonRoute />} />
-        <Route path="/focus" element={<FocusScreen />} />
-        <Route path="/progress" element={<ProgressScreen />} />
-        <Route path="/practice/:focus" element={<PracticeRoute />} />
-        <Route path="/unit/:unitId/:kind" element={<UnitRoute />} />
-        <Route path="/placement" element={<PlacementTest />} />
-        <Route path="*" element={<WithTabs><Home /></WithTabs>} />
-      </Routes>
-    </HashRouter>
+    <LangContext.Provider value={active}>
+      {/* La clé remonte tous les écrans quand la langue change : leurs requêtes lisent la nouvelle base. */}
+      <HashRouter key={active}>
+        <Routes>
+          <Route path="/" element={<WithTabs><Home /></WithTabs>} />
+          <Route path="/path" element={<WithTabs><PathScreen /></WithTabs>} />
+          <Route path="/practice" element={<WithTabs><PracticeHub /></WithTabs>} />
+          <Route path="/profile" element={<WithTabs><Profile /></WithTabs>} />
+          <Route path="/lesson/:lessonId" element={<LessonRoute />} />
+          <Route path="/focus" element={<FocusScreen />} />
+          <Route path="/progress" element={<ProgressScreen />} />
+          <Route path="/practice/:focus" element={<PracticeRoute />} />
+          <Route path="/unit/:unitId/:kind" element={<UnitRoute />} />
+          <Route path="/placement" element={<PlacementTest />} />
+          <Route path="*" element={<WithTabs><Home /></WithTabs>} />
+        </Routes>
+      </HashRouter>
+    </LangContext.Provider>
   );
 }

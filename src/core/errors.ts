@@ -1,18 +1,72 @@
 import type { ErrorTag, Exercise } from '../content/types';
 import type { ExerciseResponse, ExerciseResult } from './exercise';
 import { normalize } from './grading';
+import { activeLang } from './lang';
+import type { Lang } from '../content/types';
 
 /**
  * Classification déterministe des erreurs : on compare la réponse à la réponse attendue
  * mot par mot et on reconnaît les erreurs typiques (« he work », « goed », « must to »…).
  */
 
-const AUX = new Set(['do', 'does', 'did', 'am', 'is', 'are', 'was', 'were', 'have', 'has', 'had', 'will', 'would', 'can', 'could']);
+const set = (words: string) => new Set(words.split(' '));
+
+/** Mots-outils de chaque langue, reconnus par les détecteurs. */
+interface Lexicon {
+  aux: Set<string>;
+  articles: Set<string>;
+  prepositions: Set<string>;
+  pronouns: Set<string>;
+  /** Pronoms compléments (clitiques) : lo, la, gli, ne… */
+  clitics: Set<string>;
+  /** Paires d'articles qui ne diffèrent que par le genre */
+  genderPairs: [string, string][];
+  ser?: Set<string>;
+  estar?: Set<string>;
+}
+
+const LEXICON: Record<Lang, Lexicon> = {
+  en: {
+    aux: set('do does did am is are was were have has had will would can could'),
+    articles: set('a an the'),
+    prepositions: set('in on at to for from of by with about into under next between opposite behind'),
+    pronouns: set('i me my mine you your yours he him his she her hers it its we us our ours they them their theirs'),
+    clitics: new Set(),
+    genderPairs: [],
+  },
+  it: {
+    aux: set('sono sei è siamo siete ero eri era eravamo eravate erano ho hai ha abbiamo avete hanno avevo avevi aveva avevamo avevate avevano'),
+    articles: set("il lo la l' i gli le un uno una un'"),
+    prepositions: set('di a da in con su per tra fra del dello della dei degli delle al allo alla ai agli alle dal dallo dalla dai dagli dalle nel nello nella nei negli nelle sul sullo sulla sui sugli sulle'),
+    pronouns: set('io tu lui lei noi voi loro me te mio mia miei mie tuo tua tuoi tue suo sua suoi sue nostro nostra nostri nostre vostro vostra vostri vostre'),
+    clitics: set('mi ti ci vi si lo la li le gli ne glielo gliela glieli gliele'),
+    genderPairs: [['il', 'la'], ['lo', 'la'], ['i', 'le'], ['gli', 'le'], ['un', 'una'], ['uno', 'una'], ['del', 'della'], ['al', 'alla'], ['nel', 'nella']],
+  },
+  es: {
+    aux: set('he has ha hemos habéis han había habías habíamos habíais habían'),
+    articles: set('el la los las un una unos unas'),
+    prepositions: set('a de en con por para sin sobre entre desde hasta hacia al del'),
+    pronouns: set('yo tú él ella usted nosotros nosotras vosotros vosotras ellos ellas ustedes mí ti mi mis tu tus su sus nuestro nuestra nuestros nuestras vuestro vuestra vuestros vuestras'),
+    clitics: set('me te se nos os lo la los las le les'),
+    genderPairs: [['el', 'la'], ['los', 'las'], ['un', 'una'], ['unos', 'unas']],
+    ser: set('ser soy eres es somos sois son era eras éramos erais eran fui fue fueron sido sea seas sean'),
+    estar: set('estar estoy estás está estamos estáis están estaba estabas estábamos estabais estaban estuve estuvo estado esté estés estén'),
+  },
+};
+
 const DO_AUX = new Set(['do', 'does', 'did']);
-const ARTICLES = new Set(['a', 'an', 'the']);
-const PREPOSITIONS = new Set(['in', 'on', 'at', 'to', 'for', 'from', 'of', 'by', 'with', 'about', 'into', 'under', 'next', 'between', 'opposite', 'behind']);
-const PRONOUNS = new Set(['i', 'me', 'my', 'mine', 'you', 'your', 'yours', 'he', 'him', 'his', 'she', 'her', 'hers', 'it', 'its', 'we', 'us', 'our', 'ours', 'they', 'them', 'their', 'theirs']);
 const MODALS = new Set(['can', 'could', 'must', 'should', 'will', 'would', 'may', 'might']);
+
+/** Même mot au masculin et au féminin (ou au pluriel correspondant) : stanco / stanca, cansados / cansadas. */
+function genderSwap(a: string, b: string, lex: Lexicon): boolean {
+  if (lex.genderPairs.some(([m, f]) => (a === m && b === f) || (a === f && b === m))) return true;
+  if (a.length < 3 || a.length !== b.length) return false;
+  if (a.slice(0, -1) === b.slice(0, -1)) {
+    const ends = [a.slice(-1), b.slice(-1)].sort().join('');
+    return ends === 'ao' || ends === 'ei';
+  }
+  return a.slice(0, -2) === b.slice(0, -2) && [a.slice(-2), b.slice(-2)].sort().join('') === 'asos';
+}
 
 /** Formes des verbes irréguliers : base → [past, participe] (variantes séparées par « / ») */
 export type IrregularForms = Map<string, { past: string[]; participle: string[] }>;
@@ -78,11 +132,18 @@ export function detectTextErrors(expected: string, given: string, ex: Exercise, 
   const u = tokens(given);
   const tags = new Set<ErrorTag>();
   const irr = opts.irregulars ?? new Map();
+  const lang = activeLang();
+  const lex = LEXICON[lang];
+  const english = lang === 'en';
+  const AUX = lex.aux;
+  const ARTICLES = lex.articles;
+  const PREPOSITIONS = lex.prepositions;
+  const PRONOUNS = lex.pronouns;
   const pluralContext = ex.kcIds.some((k) => k.includes('plural') || k.includes('countable'));
 
   // Modal suivi de « to » (can to, must to, will to) absent de la réponse attendue
   const targetBigrams = new Set(t.slice(0, -1).map((w, k) => `${w} ${t[k + 1]}`));
-  for (let k = 0; k < u.length - 1; k++)
+  for (let k = 0; english && k < u.length - 1; k++)
     if (MODALS.has(u[k]) && u[k + 1] === 'to' && !targetBigrams.has(`${u[k]} to`)) tags.add('modal_to');
 
   // Même mots, autre ordre
@@ -95,12 +156,21 @@ export function detectTextErrors(expected: string, given: string, ex: Exercise, 
   // Réponse trop éloignée de l'attendu (« xx », phrase sans rapport) : pas de diagnostic inventé.
   const matched = ops.filter((o) => o.kind === 'eq').length;
   if (t.length >= 3 && matched / t.length < 0.5) return [...tags];
-  const hasDoAux = u.some((w) => DO_AUX.has(w));
+  const hasDoAux = english && u.some((w) => DO_AUX.has(w));
   for (const op of ops) {
     if (op.kind === 'sub') {
       const { t: tw, u: uw } = op;
-      if (AUX.has(tw) && AUX.has(uw)) tags.add('wrong_auxiliary');
-      else if (isThirdPersonOf(tw, uw)) tags.add(pluralContext ? 'plural_form' : 'third_person_s');
+      if (lex.ser && lex.estar && ((lex.ser.has(tw) && lex.estar.has(uw)) || (lex.estar.has(tw) && lex.ser.has(uw)))) tags.add('ser_estar');
+      else if (!english && genderSwap(tw, uw, lex)) tags.add('gender_agreement');
+      else if (lex.clitics.has(tw) && lex.clitics.has(uw)) tags.add('clitic_pronoun');
+      else if (AUX.has(tw) && AUX.has(uw)) tags.add('wrong_auxiliary');
+      else if (!english) {
+        // Les détecteurs morphologiques (-s, -ed, do) sont propres à l'anglais.
+        if (ARTICLES.has(tw) && ARTICLES.has(uw)) tags.add('article_wrong');
+        else if (PREPOSITIONS.has(tw) && PREPOSITIONS.has(uw)) tags.add('wrong_preposition');
+        else if (PRONOUNS.has(tw) && PRONOUNS.has(uw)) tags.add('wrong_pronoun');
+        else if (irregularBaseOf(tw, irr) && irregularBaseOf(uw, irr) === irregularBaseOf(tw, irr)) tags.add('irregular_form');
+      } else if (isThirdPersonOf(tw, uw)) tags.add(pluralContext ? 'plural_form' : 'third_person_s');
       else if (hasDoAux && (isThirdPersonOf(uw, tw) || isEdOf(uw, tw))) tags.add('auxiliary_with_inflected_verb');
       else if (isThirdPersonOf(uw, tw)) tags.add(pluralContext ? 'plural_form' : 'third_person_s');
       else if (ARTICLES.has(tw) && ARTICLES.has(uw)) tags.add('article_wrong');
@@ -116,7 +186,8 @@ export function detectTextErrors(expected: string, given: string, ex: Exercise, 
         } else if (tw.endsWith('ing') !== uw.endsWith('ing') || tw.endsWith('ed') !== uw.endsWith('ed')) tags.add('wrong_tense');
       }
     } else if (op.kind === 'del') {
-      if (AUX.has(op.t)) tags.add('missing_auxiliary');
+      if (lex.clitics.has(op.t)) tags.add('clitic_pronoun');
+      else if (AUX.has(op.t)) tags.add('missing_auxiliary');
       else if (ARTICLES.has(op.t)) tags.add('article_missing');
       else if (PREPOSITIONS.has(op.t)) tags.add('wrong_preposition');
     } else if (op.kind === 'ins') {
@@ -186,12 +257,16 @@ export const ERROR_LABELS: Record<ErrorTag, string> = {
   countable_uncountable: 'Dénombrable / indénombrable',
   modal_to: '« to » après un modal (can to…)',
   wrong_pronoun: 'Pronom ou possessif',
-  spelling: 'Orthographe',
+  spelling: 'Orthographe ou accents',
   vocabulary_missing: 'Vocabulaire non retrouvé',
   listening_misunderstanding: 'Compréhension orale',
   pronunciation_intelligibility: 'Prononciation / intelligibilité',
   insufficient_answer: 'Réponse trop courte ou incomplète',
   wrong_choice: 'Mauvais choix',
+  gender_agreement: 'Accord en genre ou en nombre',
+  ser_estar: 'ser ou estar',
+  subjunctive: 'Subjonctif',
+  clitic_pronoun: 'Pronom complément (lo, la, gli, ne…)',
 };
 
 /**

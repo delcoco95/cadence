@@ -1,9 +1,14 @@
-export type Cefr = 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
-export const CEFR_LEVELS: Cefr[] = ['A2', 'B1', 'B2', 'C1', 'C2'];
+/** Langue apprise. L'anglais, historique, garde des identifiants sans préfixe. */
+export type Lang = 'en' | 'it' | 'es';
+export const LANGS: Lang[] = ['en', 'it', 'es'];
 
-/** Bandes intermédiaires pour une progression plus fine que les 5 niveaux du CECRL. */
-export type CefrBand = 'A2' | 'A2+' | 'B1' | 'B1+' | 'B2' | 'B2+' | 'C1' | 'C2';
-export const CEFR_BANDS: CefrBand[] = ['A2', 'A2+', 'B1', 'B1+', 'B2', 'B2+', 'C1', 'C2'];
+export type Cefr = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
+/** Tous les niveaux possibles ; chaque cours déclare les siens (l'anglais commence à A2). */
+export const CEFR_LEVELS: Cefr[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+
+/** Bandes intermédiaires pour une progression plus fine que les 6 niveaux du CECRL. */
+export type CefrBand = 'A1' | 'A2' | 'A2+' | 'B1' | 'B1+' | 'B2' | 'B2+' | 'C1' | 'C2';
+export const CEFR_BANDS: CefrBand[] = ['A1', 'A2', 'A2+', 'B1', 'B1+', 'B2', 'B2+', 'C1', 'C2'];
 
 export type Skill = 'grammar' | 'vocabulary' | 'listening' | 'reading' | 'writing' | 'speaking';
 
@@ -29,7 +34,12 @@ export type ErrorTag =
   | 'listening_misunderstanding'
   | 'pronunciation_intelligibility'
   | 'insufficient_answer'
-  | 'wrong_choice';
+  | 'wrong_choice'
+  // Italien et espagnol
+  | 'gender_agreement'
+  | 'ser_estar'
+  | 'subjunctive'
+  | 'clitic_pronoun';
 
 /** Piège prévu par l'auteur : si la réponse normalisée contient `match`, on étiquette l'erreur. */
 export interface ErrorPattern {
@@ -59,7 +69,7 @@ interface ExerciseBase {
   instruction: string;
   /** Explication montrée après la réponse (FR) */
   explanation: string;
-  /** Phrase anglaise lisible par la synthèse vocale */
+  /** Phrase dans la langue apprise, lue par la synthèse vocale */
   speak?: string;
   vocab?: string[];
 }
@@ -104,6 +114,7 @@ export interface WordBankExercise extends ExerciseBase {
 
 export interface TranslateExercise extends ExerciseBase {
   type: 'translate';
+  /** fr_en : du français vers la langue apprise (« en » désigne la langue apprise, quelle qu'elle soit) */
   direction: 'fr_en' | 'en_fr';
   source: string;
   accepted: string[];
@@ -128,7 +139,7 @@ export interface DictationExercise extends ExerciseBase {
 /**
  * Parler dans le micro.
  * - repeat : répéter la phrase affichée (et écoutée) ;
- * - translate : dire en anglais la phrase française ;
+ * - translate : dire dans la langue apprise la phrase française ;
  * - answer : répondre librement à une question (longueur + mots-clés, exemple de réponse).
  */
 export interface SpeakExercise extends ExerciseBase {
@@ -155,6 +166,7 @@ export type ExerciseType = Exercise['type'];
 
 export interface VocabEntry {
   id: string;
+  /** Mot dans la langue apprise (le nom du champ date de l'époque où Cadence n'enseignait que l'anglais) */
   en: string;
   fr: string;
   cefr: Cefr;
@@ -164,6 +176,10 @@ export interface VocabEntry {
   exampleFr?: string;
 }
 
+/**
+ * Verbe irrégulier et ses deux formes à retenir, propres à chaque langue (voir content/languages.ts) :
+ * anglais : past simple et participe passé ; italien et espagnol : présent à la 1re personne et participe passé.
+ */
 export interface IrregularVerb {
   id: string;
   base: string;
@@ -178,6 +194,7 @@ export interface ExplanationSection {
   body?: string;
   /** Tableau de structure, ex. [['I / you / we / they', 'work'], ['he / she / it', 'works']] */
   table?: string[][];
+  /** en : phrase dans la langue apprise */
   examples?: { en: string; fr: string }[];
   tip?: string;
 }

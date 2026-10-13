@@ -1,7 +1,7 @@
 import type { CefrBand, ErrorTag } from './types';
 import { THEMES } from './vocab/a2';
 import { LEVELS } from './levels';
-import type { KcDef } from './level';
+import type { KcDef, LevelModule } from './level';
 
 /**
  * Registre des notions (knowledge components). Toute notion citée par un exercice
@@ -73,27 +73,41 @@ const GRAMMAR: Record<string, Def> = {
   'grammar.prepositions.time': { label: 'Prépositions de temps (in / on / at)', band: 'A2', errorTags: ['wrong_preposition'], lessonId: 'a2-prep-1' },
 };
 
-export const KCS: KnowledgeComponent[] = [
-  ...Object.entries(GRAMMAR).map(([id, d]) => ({
-    id, label: d.label, band: d.band, domain: d.domain ?? ('grammar' as const),
-    prerequisites: d.pre ?? [], related: d.related, errorTags: d.errorTags, lessonId: d.lessonId,
-  })),
-  ...Object.entries(THEMES).map(([k, v]) => ({
-    id: `vocab.${k}`, label: `Vocabulaire : ${v.toLowerCase()}`, band: 'A2' as const, domain: 'vocabulary' as const,
-    prerequisites: [], errorTags: ['vocabulary_missing', 'spelling'] as ErrorTag[],
-  })),
-  ...LEVELS.flatMap((level) => [
+/** Notions déclarées par un module de niveau (grammaire + un thème de vocabulaire par thème). */
+export function levelKcs(level: LevelModule): KnowledgeComponent[] {
+  return [
     ...Object.entries(level.kcs as Record<string, KcDef>).map(([id, d]) => ({
       id, label: d.label, band: d.band, domain: d.domain ?? ('grammar' as const),
       prerequisites: d.pre ?? [], related: d.related, errorTags: d.errorTags, lessonId: d.lessonId,
     })),
-    ...Object.entries(level.themes).map(([k, v]) => ({
-      id: `vocab.${k}`, label: `Vocabulaire : ${v.toLowerCase()}`, band: level.cefr as CefrBand, domain: 'vocabulary' as const,
-      prerequisites: [], errorTags: ['vocabulary_missing', 'spelling'] as ErrorTag[],
-    })),
-  ]),
+    ...themeKcs(level.themes, level.cefr as CefrBand),
+  ];
+}
+
+export const themeKcs = (themes: Record<string, string>, band: CefrBand): KnowledgeComponent[] =>
+  Object.entries(themes).map(([k, v]) => ({
+    id: `vocab.${k}`, label: `Vocabulaire : ${v.toLowerCase()}`, band, domain: 'vocabulary' as const,
+    prerequisites: [], errorTags: ['vocabulary_missing', 'spelling'] as ErrorTag[],
+  }));
+
+/** Notions du cours d'anglais. */
+export const KCS_EN: KnowledgeComponent[] = [
+  ...Object.entries(GRAMMAR).map(([id, d]) => ({
+    id, label: d.label, band: d.band, domain: d.domain ?? ('grammar' as const),
+    prerequisites: d.pre ?? [], related: d.related, errorTags: d.errorTags, lessonId: d.lessonId,
+  })),
+  ...themeKcs(THEMES, 'A2'),
+  ...LEVELS.flatMap(levelKcs),
 ];
 
-export const kcById = new Map(KCS.map((k) => [k.id, k]));
-export const KC_LABELS: Record<string, string> = Object.fromEntries(KCS.map((k) => [k.id, k.label]));
+// Notions du cours actif (voir activateCourse dans content/index.ts).
+export let KCS: KnowledgeComponent[] = KCS_EN;
+export let kcById = new Map(KCS.map((k) => [k.id, k]));
+export let KC_LABELS: Record<string, string> = Object.fromEntries(KCS.map((k) => [k.id, k.label]));
 export const kcLabel = (id: string) => KC_LABELS[id] ?? id;
+
+export function setKcs(list: KnowledgeComponent[]): void {
+  KCS = list;
+  kcById = new Map(list.map((k) => [k.id, k]));
+  KC_LABELS = Object.fromEntries(list.map((k) => [k.id, k.label]));
+}

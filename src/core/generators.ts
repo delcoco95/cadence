@@ -1,7 +1,8 @@
 import type { Exercise, IrregularVerb, VocabEntry } from '../content/types';
 import { seededShuffle } from './exercise';
 import type { IntroCard } from './session';
-import { THEMES } from '../content/vocab/a2';
+import { THEMES } from '../content';
+import { activeLang, activeLanguage } from './lang';
 
 /** Exercices générés à partir des données (vocabulaire, verbes irréguliers) : pas de saisie à la main. */
 
@@ -23,17 +24,20 @@ function distractors(entry: VocabEntry, pool: VocabEntry[], seed: string, key: '
   return picked.map((v) => v[key]);
 }
 
-/** Variantes acceptées : « to go » ↔ « go », plusieurs formes séparées par « / ». */
+/** Variantes acceptées : plusieurs formes séparées par « / » ; en anglais, « to go » ↔ « go ». */
 export function englishVariants(en: string): string[] {
   const forms = en.split('/').map((s) => s.trim());
   return forms.flatMap((f) => (f.startsWith('to ') ? [f, f.slice(3)] : [f]));
 }
 
+export const targetVariants = (word: string): string[] =>
+  activeLang() === 'en' ? englishVariants(word) : word.split('/').map((s) => s.trim());
+
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 function findInExample(entry: VocabEntry): RegExpMatchArray | null {
   if (!entry.example) return null;
-  const word = englishVariants(entry.en).at(-1)!;
+  const word = targetVariants(entry.en).at(-1)!;
   return entry.example.match(new RegExp(`\\b${escapeRe(word)}\\b`, 'i'));
 }
 
@@ -70,7 +74,7 @@ export function vocabExercise(entry: VocabEntry, pool: VocabEntry[], mode: Vocab
     case 'fr_en':
       return {
         ...common, id: `gen-v-${entry.id}-fr_en`, type: 'type_answer', skill: 'vocabulary', difficulty: -1,
-        instruction: 'Comment dit-on en anglais ?', question: entry.fr, accepted: englishVariants(entry.en), explanation,
+        instruction: activeLanguage().instructions.howToSay, question: entry.fr, accepted: targetVariants(entry.en), explanation,
       };
     case 'cloze':
       return {
@@ -81,7 +85,7 @@ export function vocabExercise(entry: VocabEntry, pool: VocabEntry[], mode: Vocab
     case 'say':
       return {
         ...common, id: `gen-v-${entry.id}-say`, type: 'speak', mode: 'translate', skill: 'speaking', difficulty: -1,
-        instruction: 'Dis-le en anglais.', prompt: entry.fr, accepted: englishVariants(entry.en), explanation,
+        instruction: activeLanguage().instructions.sayShort, prompt: entry.fr, accepted: targetVariants(entry.en), explanation,
       };
   }
 }
@@ -98,6 +102,7 @@ export function irregularModeFor(reps: number, seed: string, speaking: boolean):
 const forms = (s: string) => s.split('/').map((f) => f.trim());
 
 export function irregularExercise(v: IrregularVerb, mode: IrregularMode): Exercise {
+  const labels = activeLanguage().verbs;
   const common = {
     cefr: v.cefr, skill: 'grammar' as const, kcIds: ['verbs.irregular'], tense: 'irregular',
     speak: `${v.base}, ${spoken(v.past)}, ${spoken(v.participle)}`,
@@ -108,24 +113,24 @@ export function irregularExercise(v: IrregularVerb, mode: IrregularMode): Exerci
     case 'past':
       return {
         ...common, id: `gen-irr-${v.id}-past`, type: 'type_answer', difficulty: -1, strict: true,
-        instruction: 'Écris le past simple.', question: `${v.base} (${v.fr}) → ___`, accepted: forms(v.past),
+        instruction: labels.pastInstruction, question: `${v.base} (${v.fr}) → ___`, accepted: forms(v.past),
       };
     case 'participle':
       return {
         ...common, id: `gen-irr-${v.id}-pp`, type: 'type_answer', difficulty: -0.5, strict: true,
-        instruction: 'Écris le participe passé.', question: `${v.base} (${v.fr}) → ${v.past} → ___`,
+        instruction: labels.participleInstruction, question: `${v.base} (${v.fr}) → ${v.past} → ___`,
         accepted: forms(v.participle),
       };
     case 'three':
       return {
         ...common, id: `gen-irr-${v.id}-three`, type: 'type_answer', difficulty: 0, strict: true,
-        instruction: 'Écris le past simple puis le participe passé, séparés par un espace.',
+        instruction: labels.threeInstruction,
         question: `${v.base} (${v.fr}) → ___ → ___`, accepted: pairs(),
       };
     case 'say':
       return {
         ...common, id: `gen-irr-${v.id}-say`, type: 'speak', mode: 'translate', skill: 'speaking', difficulty: 0,
-        instruction: 'Dis les trois formes à voix haute.', prompt: `${v.base} (${v.fr}) → … → …`,
+        instruction: labels.sayInstruction, prompt: `${v.base} (${v.fr}) → … → …`,
         accepted: pairs(`${v.base} `),
       };
   }
@@ -141,13 +146,17 @@ export const vocabIntro = (v: VocabEntry): IntroCard => ({
 });
 
 /** « was/were » se lit « was or were » (sans espaces, la synthèse disait « wasorwere »). */
-const spoken = (forms: string) => forms.split('/').map((f) => f.trim()).join(' or ');
+const spoken = (forms: string) => forms.split('/').map((f) => f.trim()).join(` ${activeLanguage().or} `);
 
 /** Fiche de présentation d'un verbe irrégulier. */
 export const irregularIntro = (v: IrregularVerb): IntroCard => ({
   label: 'Verbe irrégulier',
   title: `${v.base} → ${v.past} → ${v.participle}`,
   subtitle: v.fr,
-  lines: [{ en: `base : ${v.base}` }, { en: `past simple : ${v.past}` }, { en: `participe passé : ${v.participle}` }],
+  lines: [
+    { en: `${activeLang() === 'en' ? 'base' : 'infinitif'} : ${v.base}` },
+    { en: `${activeLanguage().verbs.past} : ${v.past}` },
+    { en: `participe passé : ${v.participle}` },
+  ],
   speak: `${v.base}, ${spoken(v.past)}, ${spoken(v.participle)}`,
 });

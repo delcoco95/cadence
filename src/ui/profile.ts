@@ -2,6 +2,8 @@ import { useCallback } from 'react';
 import { genderize, pick, type Gender } from '../core/gender';
 import { useSettings } from '../db/hooks';
 import type { Motivation } from '../db/db';
+import { activeLang, activeLanguage } from '../core/lang';
+import type { Lang } from '../content/types';
 
 export interface ProfileText {
   gender: Gender;
@@ -73,10 +75,18 @@ export function comboText(n: number): string {
 export function hello(p: ProfileText, hour: number): string {
   const name = withName(p.name);
   if (hour < 5) return `Encore debout${name} ? Une petite leçon ?`;
-  if (hour < 12) return `Good morning${name}!`;
-  if (hour < 18) return `Hello${name}!`;
-  return `Good evening${name}!`;
+  const [morning, day, evening] = GREETINGS[activeLang()];
+  if (hour < 12) return morning(name);
+  if (hour < 18) return day(name);
+  return evening(name);
 }
+
+/** Salutations de Coco dans la langue apprise. */
+const GREETINGS: Record<Lang, ((name: string) => string)[]> = {
+  en: [(n) => `Good morning${n}!`, (n) => `Hello${n}!`, (n) => `Good evening${n}!`],
+  it: [(n) => `Buongiorno${n}!`, (n) => `Ciao${n}!`, (n) => `Buonasera${n}!`],
+  es: [(n) => `¡Buenos días${n}!`, (n) => `¡Hola${n}!`, (n) => `¡Buenas tardes${n}!`],
+};
 
 export function homeLine(p: ProfileText, state: { goalMet: boolean; started: boolean; streak: number }, seed: number): string {
   if (state.goalMet) {
@@ -93,7 +103,7 @@ export function homeLine(p: ProfileText, state: { goalMet: boolean; started: boo
   if (state.streak >= 2) return `Série de ${state.streak} jours ! Ne la laisse pas filer.`;
   return vary(
     [
-      p.t('{Prêt|Prête|Prêt·e} pour quelques minutes d’anglais ?'),
+      p.t(`{Prêt|Prête|Prêt·e} pour quelques minutes d’${activeLanguage().name} ?`),
       'Un peu chaque jour, c’est comme ça qu’on progresse.',
       'Let’s go ! Ta leçon t’attend.',
     ],

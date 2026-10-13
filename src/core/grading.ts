@@ -1,3 +1,5 @@
+import { activeLang } from './lang';
+
 /** Correction déterministe des réponses fermées. */
 
 const CONTRACTIONS: [RegExp, string][] = [
@@ -16,7 +18,7 @@ const CONTRACTIONS: [RegExp, string][] = [
   [/\b(do|does|did|is|are|was|were|have|has|had|would|should|could|must)n't\b/g, '$1 not'],
 ];
 
-/** Minuscules, apostrophes unifiées, contractions développées, ponctuation retirée. */
+/** Minuscules, apostrophes unifiées, contractions anglaises développées, ponctuation retirée (y compris ¿ et ¡). */
 export function normalize(input: string): string {
   let s = input
     .toLowerCase()
@@ -24,9 +26,9 @@ export function normalize(input: string): string {
     .replace(/[’‘`´]/g, "'")
     .replace(/[“”]/g, '"')
     .trim();
-  for (const [re, rep] of CONTRACTIONS) s = s.replace(re, rep);
+  if (activeLang() === 'en') for (const [re, rep] of CONTRACTIONS) s = s.replace(re, rep);
   return s
-    .replace(/[.,!?;:"()«»]/g, ' ')
+    .replace(/[.,!?¿¡;:"()«»…]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -56,10 +58,14 @@ export interface TextGrade {
   closest: string;
 }
 
+/** Sans accents : « perché » → « perche ». */
+export const stripAccents = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').normalize('NFC');
+
 /**
  * Compare une réponse libre à une liste de réponses acceptées.
  * Une faute de frappe légère (1 caractère pour ≤ 8, 2 au-delà) est tolérée
  * et signalée, sauf si `strict` (ex. conjugaison, où une lettre change tout).
+ * Un oubli d'accent seul est toujours signalé sans être compté faux : il dépend souvent du clavier.
  */
 export function gradeText(input: string, accepted: string[], strict = false): TextGrade {
   const n = normalize(input);
@@ -70,6 +76,8 @@ export function gradeText(input: string, accepted: string[], strict = false): Te
     if (dist === 0) break;
   }
   if (best.dist === 0) return { verdict: 'correct', score: 1, closest: best.answer };
+  const accentOnly = accepted.find((a) => stripAccents(normalize(a)) === stripAccents(n));
+  if (n.length > 0 && accentOnly) return { verdict: 'typo', score: 0.8, closest: accentOnly };
   const target = normalize(best.answer);
   const tolerance = strict || target.length <= 3 ? 0 : target.length <= 8 ? 1 : 2;
   if (n.length > 0 && best.dist <= tolerance) return { verdict: 'typo', score: 0.8, closest: best.answer };

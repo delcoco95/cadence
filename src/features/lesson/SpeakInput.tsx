@@ -6,6 +6,7 @@ import { AudioPrompt } from './AudioPrompt';
 import { SaysPrompt } from './ExerciseView';
 import { MicIcon, StopIcon } from '../../ui/Icons';
 import { stopSpeaking } from '../../speech/tts';
+import { activeLang, activeLanguage } from '../../core/lang';
 
 type Status = 'idle' | 'listening' | 'done' | 'fallback';
 
@@ -103,8 +104,8 @@ export function SpeakInput({ exercise, locked, onChange, say, lang, onSkipSpeaki
             rows={3}
             value={text}
             disabled={locked}
-            placeholder="Touche la zone, puis le micro du clavier, et parle en anglais…"
-            lang="en"
+            placeholder={`Touche la zone, puis le micro du clavier, et parle en ${activeLanguage().name}…`}
+            lang={activeLang()}
             autoCapitalize="sentences"
             onChange={(e) => {
               setText(e.target.value);
@@ -112,7 +113,7 @@ export function SpeakInput({ exercise, locked, onChange, say, lang, onSkipSpeaki
             }}
           />
           <p className="note">
-            Dicte avec la touche micro du clavier iOS (clavier réglé en anglais pour de meilleurs résultats). Écrire à la main fausse l’exercice.
+            Dicte avec la touche micro du clavier iOS (clavier réglé en {activeLanguage().name} pour de meilleurs résultats). Écrire à la main fausse l’exercice.
           </p>
         </div>
       )}

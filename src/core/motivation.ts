@@ -1,6 +1,6 @@
 import type { Motivation } from '../db/db';
 
-/** Thèmes de vocabulaire liés à chaque objectif, du plus au moins utile. */
+/** Thèmes de vocabulaire du cours d'anglais liés à chaque objectif, du plus au moins utile (chaque cours a les siens). */
 export const MOTIVATION_THEMES: Record<Motivation, string[]> = {
   travel: ['ph_travel', 'travel', 'city', 'food', 'weather', 'shopping'],
   work: ['ph_work', 'work', 'it', 'time'],
@@ -14,8 +14,8 @@ export const MOTIVATION_THEMES: Record<Motivation, string[]> = {
  * Ordre de priorité des thèmes pour plusieurs objectifs : on alterne entre les objectifs
  * (1er thème de chacun, puis 2e…) pour qu'aucun ne soit oublié.
  */
-export function priorityThemes(motivations: Motivation[]): string[] {
-  const lists = motivations.map((m) => MOTIVATION_THEMES[m] ?? []);
+export function priorityThemes(motivations: Motivation[], byMotivation: Record<Motivation, string[]> = MOTIVATION_THEMES): string[] {
+  const lists = motivations.map((m) => byMotivation[m] ?? []);
   const out: string[] = [];
   for (let i = 0; i < Math.max(0, ...lists.map((l) => l.length)); i++)
     for (const l of lists) if (l[i] && !out.includes(l[i])) out.push(l[i]);
@@ -28,9 +28,13 @@ export function priorityThemes(motivations: Motivation[]): string[] {
  * À l'intérieur d'un objectif, l'ordre suit ses thèmes puis l'ordre d'apprentissage d'origine.
  * Sans objectif particulier, l'ordre ne change pas.
  */
-export function prioritizeByMotivation<T extends { theme: string }>(items: T[], motivations: Motivation[]): T[] {
+export function prioritizeByMotivation<T extends { theme: string }>(
+  items: T[],
+  motivations: Motivation[],
+  byMotivation: Record<Motivation, string[]> = MOTIVATION_THEMES,
+): T[] {
   const queues = motivations
-    .map((m) => MOTIVATION_THEMES[m] ?? [])
+    .map((m) => byMotivation[m] ?? [])
     .filter((themes) => themes.length)
     .map((themes) => themes.flatMap((t) => items.filter((i) => i.theme === t)));
   if (!queues.length) return items;

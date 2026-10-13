@@ -1,4 +1,5 @@
-import type { Cefr, Exercise, Skill } from './types';
+import type { Cefr, Exercise, Lang, Skill } from './types';
+import { LANGUAGES } from './languages';
 
 /**
  * Petit DSL pour écrire des leçons rapidement et lisiblement.
@@ -17,7 +18,15 @@ interface Opts {
   passage?: string;
 }
 
-export function exercises(prefix: string, cefr: Cefr, defaults: { kc: string | string[]; tense?: string }) {
+/** Constructeur d'exercices d'une langue : les consignes (« Traduis en italien. ») en dépendent. */
+export function makeExercises(lang: Lang) {
+  return (prefix: string, cefr: Cefr, defaults: { kc: string | string[]; tense?: string }) => build(lang, prefix, cefr, defaults);
+}
+
+export const exercises = makeExercises('en');
+
+function build(lang: Lang, prefix: string, cefr: Cefr, defaults: { kc: string | string[]; tense?: string }) {
+  const say = LANGUAGES[lang].instructions;
   const list: Exercise[] = [];
   const base = (o: Opts, skill: Skill, instruction: string, explanation: string) => {
     const kc = o.kc ?? defaults.kc;
@@ -66,10 +75,10 @@ export function exercises(prefix: string, cefr: Cefr, defaults: { kc: string | s
       });
       return api;
     },
-    /** Traduction FR → EN. */
+    /** Traduction du français vers la langue apprise. */
     tr(source: string, accepted: string[], explanation: string, o: Opts = {}) {
       list.push({
-        ...base(o, 'writing', 'Traduis en anglais.', explanation),
+        ...base(o, 'writing', say.translate, explanation),
         type: 'translate', direction: 'fr_en', source, accepted, speak: o.speak ?? accepted[0],
       });
       return api;
@@ -98,10 +107,10 @@ export function exercises(prefix: string, cefr: Cefr, defaults: { kc: string | s
       });
       return api;
     },
-    /** Oral : dire en anglais une phrase française. */
+    /** Oral : dire dans la langue apprise une phrase française. */
     say(fr: string, accepted: string[], explanation: string, o: Opts = {}) {
       list.push({
-        ...base(o, 'speaking', 'Dis-le en anglais, à voix haute.', explanation),
+        ...base(o, 'speaking', say.say, explanation),
         type: 'speak', mode: 'translate', prompt: fr, accepted, speak: o.speak ?? accepted[0],
       });
       return api;

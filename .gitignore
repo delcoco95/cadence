@@ -8,3 +8,8 @@ dev-dist
 tools/voices/node_modules
 tools/voices/samples
 tools/voices/*.log
+
+# Voix italiennes et espagnoles (Python, modèles téléchargés)
+tools/voices/.venv
+tools/voices/models
+public/audio/**/*.part

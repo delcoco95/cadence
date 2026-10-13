@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, useNavigate } from 'react-router-dom';
-import { CEFR_LEVELS } from '../../content/types';
-import { getLesson, UNITS } from '../../content';
+import { getLesson, LEVELS_OF_COURSE, UNITS } from '../../content';
 import type { Step, UnitView } from '../../core/units';
 import { loadPath, stepPath } from '../../db/units';
 import { useSettings } from '../../db/hooks';
@@ -59,7 +58,7 @@ export function PathScreen() {
         </div>
       </header>
 
-      {CEFR_LEVELS.map((level) => {
+      {LEVELS_OF_COURSE.map((level) => {
         const views = path.units.filter((v) => v.unit.cefr === level);
         if (views.length === 0) {
           return (

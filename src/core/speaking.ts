@@ -1,18 +1,36 @@
-import { levenshtein, normalize } from './grading';
+import { levenshtein, normalize, stripAccents } from './grading';
+import { activeLang } from './lang';
+import type { Lang } from '../content/types';
 
-const NUMBERS: Record<string, string> = {
-  '0': 'zero', '1': 'one', '2': 'two', '3': 'three', '4': 'four', '5': 'five', '6': 'six',
-  '7': 'seven', '8': 'eight', '9': 'nine', '10': 'ten', '11': 'eleven', '12': 'twelve',
-  '20': 'twenty', '30': 'thirty', '100': 'hundred',
+const NUMBERS: Record<Lang, Record<string, string>> = {
+  en: {
+    '0': 'zero', '1': 'one', '2': 'two', '3': 'three', '4': 'four', '5': 'five', '6': 'six',
+    '7': 'seven', '8': 'eight', '9': 'nine', '10': 'ten', '11': 'eleven', '12': 'twelve',
+    '20': 'twenty', '30': 'thirty', '100': 'hundred',
+  },
+  it: {
+    '0': 'zero', '1': 'uno', '2': 'due', '3': 'tre', '4': 'quattro', '5': 'cinque', '6': 'sei',
+    '7': 'sette', '8': 'otto', '9': 'nove', '10': 'dieci', '11': 'undici', '12': 'dodici',
+    '20': 'venti', '30': 'trenta', '100': 'cento',
+  },
+  es: {
+    '0': 'cero', '1': 'uno', '2': 'dos', '3': 'tres', '4': 'cuatro', '5': 'cinco', '6': 'seis',
+    '7': 'siete', '8': 'ocho', '9': 'nueve', '10': 'diez', '11': 'once', '12': 'doce',
+    '20': 'veinte', '30': 'treinta', '100': 'cien',
+  },
 };
 
-/** Mots normalisés ; les chiffres deviennent des mots (la reconnaissance vocale écrit « 7 » ou « seven »). */
+/**
+ * Mots normalisés ; les chiffres deviennent des mots (la reconnaissance vocale écrit « 7 » ou « seven »).
+ * À l'oral, les accents ne comptent pas : la transcription les omet parfois (« esta » pour « está »).
+ */
 export function words(text: string): string[] {
   return normalize(text)
     .replace(/(\d+)\s*(am|pm)\b/g, '$1 $2')
     .split(' ')
     .filter(Boolean)
-    .map((w) => NUMBERS[w] ?? w);
+    .map((w) => NUMBERS[activeLang()][w] ?? w)
+    .map((w) => (activeLang() === 'en' ? w : stripAccents(w)));
 }
 
 const sameWord = (a: string, b: string) => a === b || (a.length >= 5 && levenshtein(a, b) <= 1);

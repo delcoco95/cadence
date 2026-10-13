@@ -12,13 +12,16 @@ import { bandCenter, type PlacementBand, type PlacementItemMeta, type PlacementS
 
 export type PlacementExercise = (McqExercise | ListenMcqExercise) & { placement: PlacementItemMeta };
 
-interface Raw {
+/** Item brut d'une banque de placement (format commun à toutes les langues). */
+export interface PlacementRaw {
   band: PlacementBand;
   q: string;
   o: string[];
   /** Index de la bonne réponse */
   a: number;
+  /** Explication en français */
   why: string;
+  /** Unité du parcours que l'item permet de valider (niveaux à dispense fine, voir Course.placementUnitLevels) */
   unit?: string;
   passage?: string;
   audio?: string;
@@ -31,16 +34,29 @@ const INSTRUCTIONS: Record<PlacementSection, string> = {
   listening: 'Écoute, puis réponds.',
 };
 
-const cefrOf = (band: PlacementBand): Cefr => (band.startsWith('C') ? 'C1' : band.startsWith('B2') ? 'B2' : band.startsWith('B1') ? 'B1' : 'A2');
+const cefrOf = (band: PlacementBand, lowest: Cefr): Cefr =>
+  band.startsWith('C') ? 'C1' : band.startsWith('B2') ? 'B2' : band.startsWith('B1') ? 'B1' : band === 'A1' ? lowest : 'A2';
 
-function build(section: PlacementSection, items: Raw[]): PlacementExercise[] {
+/**
+ * Banque de placement d'un cours. Identifiants : `${prefix}pl-<section>-01`… dans l'ordre d'écriture :
+ * ajouter les nouveaux items À LA FIN d'une section.
+ * `lowest` : premier niveau du cours (un item A1 du cours d'anglais, qui commence à A2, est rangé en A2).
+ */
+export function placementBank(
+  sections: Record<PlacementSection, PlacementRaw[]>,
+  opts: { prefix?: string; lowest?: Cefr } = {},
+): PlacementExercise[] {
+  return (Object.keys(INSTRUCTIONS) as PlacementSection[]).flatMap((section) => build(section, sections[section], opts.prefix ?? '', opts.lowest ?? 'A1'));
+}
+
+function build(section: PlacementSection, items: PlacementRaw[], prefix: string, lowest: Cefr): PlacementExercise[] {
   return items.map((r, i) => {
-    const id = `pl-${section}-${String(i + 1).padStart(2, '0')}`;
+    const id = `${prefix}pl-${section}-${String(i + 1).padStart(2, '0')}`;
     const b = bandCenter(r.band);
     const placement: PlacementItemMeta = { id, section, b, guess: 1 / r.o.length, unitId: r.unit };
     const base = {
       id,
-      cefr: cefrOf(r.band),
+      cefr: cefrOf(r.band, lowest),
       skill: section,
       kcIds: [],
       difficulty: b,
@@ -58,7 +74,7 @@ function build(section: PlacementSection, items: Raw[]): PlacementExercise[] {
   });
 }
 
-const GRAMMAR: Raw[] = [
+const GRAMMAR: PlacementRaw[] = [
   { band: 'A1', q: 'She ___ a teacher.', o: ['is', 'are', 'am', 'be'], a: 0, why: 'he / she / it → is.' },
   { band: 'A1', q: 'There ___ two books on the table.', o: ['is', 'are', 'be', 'has'], a: 1, why: 'Pluriel → there are.', unit: 'a2-basics' },
   { band: 'A1', q: 'I’d like ___ apple, please.', o: ['a', 'an', 'the', 'some'], a: 1, why: 'Son voyelle → an apple.', unit: 'a2-basics' },
@@ -95,7 +111,7 @@ const GRAMMAR: Raw[] = [
   { band: 'C1', q: 'The proposal, ___ details are still unclear, will be discussed tomorrow.', o: ['whose', 'which', 'that', 'who’s'], a: 0, why: 'Relatif possessif → whose.' },
 ];
 
-const VOCABULARY: Raw[] = [
+const VOCABULARY: PlacementRaw[] = [
   { band: 'A1', q: 'My mother’s sister is my ___.', o: ['aunt', 'cousin', 'niece', 'uncle'], a: 0, why: 'aunt = tante.' },
   { band: 'A1', q: 'It’s very cold. Put on your ___.', o: ['coat', 'shorts', 'sandals', 'swimsuit'], a: 0, why: 'coat = manteau.' },
   { band: 'A1', q: 'I have ___ at 8 in the morning, before work.', o: ['breakfast', 'dinner', 'lunch', 'a party'], a: 0, why: 'breakfast = petit-déjeuner.' },
@@ -120,7 +136,7 @@ const VOCABULARY: Raw[] = [
   { band: 'C1', q: 'The results were ___ with our predictions.', o: ['consistent', 'coherent', 'constant', 'compliant'], a: 0, why: 'consistent with = cohérent avec, conforme à.' },
 ];
 
-const READING: Raw[] = [
+const READING: PlacementRaw[] = [
   {
     band: 'A1', passage: 'My name is Lucy. I’m 25 and I live in Leeds with my cat. I work in a hospital. I love my job!',
     q: 'Where does Lucy work?', o: ['In a hospital', 'In a school', 'In a shop', 'At home'], a: 0, why: '« I work in a hospital. »',
@@ -171,7 +187,7 @@ const READING: Raw[] = [
   },
 ];
 
-const LISTENING: Raw[] = [
+const LISTENING: PlacementRaw[] = [
   { band: 'A1', audio: 'The bus leaves at half past eight.', q: 'When does the bus leave?', o: ['8:30', '8:15', '9:30', '8:00'], a: 0, why: 'half past eight = 8 h 30.' },
   { band: 'A1', audio: 'I’d like a coffee and two croissants, please.', q: 'What does the person order?', o: ['One coffee and two croissants', 'Two coffees and one croissant', 'A tea and two croissants', 'Two coffees'], a: 0, why: '« a coffee and two croissants ».' },
   { band: 'A2', audio: 'Sorry I’m late. There was a lot of traffic on the motorway.', q: 'Why is the speaker late?', o: ['Because of the traffic', 'Because the train was late', 'Because they got up late', 'Because of the weather'], a: 0, why: '« a lot of traffic ».' },
@@ -186,11 +202,8 @@ const LISTENING: Raw[] = [
   { band: 'C1', audio: 'The figures, if anything, understate the problem, since many cases simply go unreported.', q: 'What does the speaker imply?', o: ['The real problem is bigger than the figures show', 'The figures exaggerate the problem', 'Most cases are reported', 'The problem is disappearing'], a: 0, why: '« understate » = minimiser.' },
 ];
 
-export const PLACEMENT_ITEMS: PlacementExercise[] = [
-  ...build('grammar', GRAMMAR),
-  ...build('vocabulary', VOCABULARY),
-  ...build('reading', READING),
-  ...build('listening', LISTENING),
-];
-
-export const placementById = new Map(PLACEMENT_ITEMS.map((e) => [e.id, e]));
+/** Banque du cours d'anglais. */
+export const PLACEMENT_ITEMS: PlacementExercise[] = placementBank(
+  { grammar: GRAMMAR, vocabulary: VOCABULARY, reading: READING, listening: LISTENING },
+  { lowest: 'A2' },
+);

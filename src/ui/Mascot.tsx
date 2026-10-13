@@ -1,9 +1,14 @@
-import type { CSSProperties, ReactNode } from 'react';
+import { useId, type CSSProperties, type ReactNode } from 'react';
+import { FlagShapes, JERSEYS, useLang } from './language';
 
 export type Mood = 'idle' | 'happy' | 'cheer' | 'sad' | 'think' | 'wow';
 
-/** Coco, l'oiseau mélomane de Cadence. Dessin vectoriel, humeurs animées en CSS. */
+/** Coco, l'oiseau mélomane de Cadence, en maillot du pays de la langue apprise. Dessin vectoriel, humeurs animées en CSS. */
 export function Mascot({ mood = 'idle', size = 96, style }: { mood?: Mood; size?: number; style?: CSSProperties }) {
+  const lang = useLang();
+  const jersey = JERSEYS[lang];
+  // Identifiant unique : plusieurs Coco peuvent être affichés sur la même page.
+  const clip = `coco-clip-${useId().replace(/:/g, '')}`;
   const happyEyes = mood === 'happy' || mood === 'cheer';
   const wingsUp = mood === 'cheer' || mood === 'wow';
   return (
@@ -13,6 +18,9 @@ export function Mascot({ mood = 'idle', size = 96, style }: { mood?: Mood; size?
           <stop offset="0" stopColor="var(--mascot-light)" />
           <stop offset="1" stopColor="var(--mascot)" />
         </radialGradient>
+        <clipPath id={clip}>
+          <ellipse cx="60" cy="68" rx="40" ry="40" />
+        </clipPath>
       </defs>
       <g className="mascot-body">
         {/* ombre au sol */}
@@ -29,6 +37,16 @@ export function Mascot({ mood = 'idle', size = 96, style }: { mood?: Mood; size?
         {/* corps */}
         <ellipse cx="60" cy="68" rx="40" ry="40" fill="url(#coco-body)" />
         <ellipse cx="60" cy="84" rx="25" ry="20" fill="var(--belly)" />
+        {/* maillot */}
+        <g clipPath={`url(#${clip})`} className="mascot-jersey">
+          <path d="M16 91Q60 80 104 91V112H16z" fill={jersey.shirt} />
+          <path d="M16 91Q60 80 104 91" fill="none" stroke={jersey.collar} strokeWidth="2.5" />
+          <path d="M52 85.5L60 93L68 85.5" fill="none" stroke={jersey.collar} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+          <rect x="71.5" y="93.5" width="13" height="9.5" rx="1.6" fill="rgb(0 0 0 / .14)" />
+          <svg x="72" y="94" width="12" height="8.5" viewBox="0 0 12 8" preserveAspectRatio="none">
+            <FlagShapes lang={lang} x={0} y={0} w={12} />
+          </svg>
+        </g>
         {/* houppette */}
         <path d="M56 30c-3-8 0-14 6-16-1 5 1 9 4 12-3 0-7 1-10 4z" fill="var(--mascot)" />
         {/* casque */}

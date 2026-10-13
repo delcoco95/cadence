@@ -101,15 +101,16 @@ export function voiceGender(v: VoiceLike): VoiceGender | undefined {
 }
 
 const sameLang = (v: VoiceLike, accent: string) => v.lang.replace('_', '-').toLowerCase() === accent.toLowerCase();
-const isEnglish = (v: VoiceLike) => v.lang.toLowerCase().startsWith('en');
+/** Voix d'une langue, tous accents confondus (« en », « it », « es »). */
+const inLanguage = (v: VoiceLike, lang: string) => v.lang.toLowerCase().startsWith(lang);
 
 /**
  * Voix utilisables pour un accent, de la meilleure à la moins bonne.
  * Ordre : qualité, puis genre préféré, puis voix locale (hors ligne).
  */
 export function rankVoices<V extends VoiceLike>(voices: V[], accent: string, pref: VoiceGenderPref = 'any'): RankedVoice<V>[] {
-  // accent 'en' : toutes les voix anglaises (repli quand l'accent demandé n'existe pas sur l'appareil)
-  const match = accent === 'en' ? isEnglish : (v: VoiceLike) => sameLang(v, accent);
+  // accent 'en' (code de langue seul) : toutes les voix anglaises (repli quand l'accent demandé n'existe pas sur l'appareil)
+  const match = accent.length === 2 ? (v: VoiceLike) => inLanguage(v, accent) : (v: VoiceLike) => sameLang(v, accent);
   return voices
     .filter((v) => match(v) && !isNovelty(v))
     .map((voice) => {
@@ -125,7 +126,7 @@ export const TIER_LABELS: Record<VoiceTier, string> = { 3: 'Naturelle', 2: 'Amé
 
 /**
  * Voix à utiliser : celle choisie par l'utilisateur si elle existe sur l'appareil,
- * sinon la meilleure de l'accent, sinon la meilleure voix anglaise d'un autre accent.
+ * sinon la meilleure de l'accent, sinon la meilleure voix de la même langue dans un autre accent.
  */
 export function chooseVoice<V extends VoiceLike>(
   voices: V[],
@@ -135,7 +136,7 @@ export function chooseVoice<V extends VoiceLike>(
 ): V | undefined {
   if (preferred) {
     // Une voix choisie explicitement est gardée même d'un autre accent (repli quand l'accent manque).
-    const english = voices.filter((v) => isEnglish(v) && !isNovelty(v));
+    const english = voices.filter((v) => inLanguage(v, accent.slice(0, 2).toLowerCase()) && !isNovelty(v));
     const exact = english.find((v) => voiceId(v) === preferred);
     if (exact) return exact;
     // Ancien réglage (nom seul) : parmi les voix de ce nom, la meilleure, jamais la compacte par défaut.
@@ -144,5 +145,5 @@ export function chooseVoice<V extends VoiceLike>(
   }
   const ranked = rankVoices(voices, accent, pref);
   if (ranked.length) return ranked[0].voice;
-  return rankVoices(voices, 'en', pref)[0]?.voice;
+  return rankVoices(voices, accent.slice(0, 2).toLowerCase(), pref)[0]?.voice;
 }

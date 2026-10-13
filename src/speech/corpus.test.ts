@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { speechCorpus } from './corpus';
 import { normalizeSpeech, speechKey } from './audioKey';
-import { VOICE_SAMPLE } from './audio';
+import { LANGUAGES } from '../content/languages';
 import { IRREGULAR_VERBS, LESSONS, VOCAB_A2 } from '../content';
 import { irregularIntro, vocabIntro } from '../core/generators';
 
@@ -20,7 +20,7 @@ describe('voix pré-générées : corpus', () => {
 
   it('couvre tout ce que l’app lit à voix haute', () => {
     const spoken = [
-      VOICE_SAMPLE,
+      LANGUAGES.en.voiceSample,
       ...LESSONS.flatMap((l) => l.exercises.map((e) => e.speak).filter((t): t is string => !!t)),
       ...LESSONS.flatMap((l) => l.explanation.flatMap((s) => (s.examples ?? []).map((x) => x.en))),
       ...VOCAB_A2.map((v) => vocabIntro(v).speak),

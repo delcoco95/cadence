@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UNITS } from '../../content';
+import { LEVELS_OF_COURSE, UNITS } from '../../content';
 import { SECTIONS, type PlacementBand, type PlacementResult } from '../../core/placement';
 import { applyPlacement } from '../../db/units';
 import { Confetti } from '../../ui/Confetti';
@@ -83,7 +83,7 @@ export function PlacementResultView({ result, id, durationMs }: { result: Placem
         ) : (
           <>
             <h3>Ton point de départ</h3>
-            <p className="small">On commence par les bases A2 : chaque unité se termine par un défi, et tu avances à ton rythme.</p>
+            <p className="small">On commence par les bases {LEVELS_OF_COURSE[0]} : chaque unité se termine par un défi, et tu avances à ton rythme.</p>
           </>
         )}
       </section>

@@ -5,6 +5,7 @@ import { SpeakInput } from './SpeakInput';
 import { AudioPrompt } from './AudioPrompt';
 import { Mascot } from '../../ui/Mascot';
 import { sfx } from '../../ui/sfx';
+import { activeLanguage } from '../../core/lang';
 
 export interface ExerciseProps {
   exercise: Exercise;
@@ -92,7 +93,7 @@ function TextAnswer({ exercise, locked, onChange, onSubmit, say }: Props) {
     placeholder = 'Mot(s) manquant(s)';
   } else if (exercise.type === 'translate') {
     prompt = <SaysPrompt text={exercise.source} />;
-    placeholder = exercise.direction === 'fr_en' ? 'In English…' : 'En français…';
+    placeholder = exercise.direction === 'fr_en' ? activeLanguage().placeholder : 'En français…';
   } else if (exercise.type === 'type_answer') {
     prompt = <p className="prompt">{exercise.question}</p>;
   } else if (exercise.type === 'dictation') {
