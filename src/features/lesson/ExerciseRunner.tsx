@@ -6,7 +6,8 @@ import { detectErrors, ERROR_LABELS } from '../../core/errors';
 import { evidenceOf } from '../../core/evidence';
 import { genderizeDeep } from '../../core/gender';
 import { recordResult, retryItem, type Confidence } from '../../db/learning';
-import { IRREGULAR_FORMS } from '../../db/meta';
+import { irregularForms } from '../../db/meta';
+import { words } from '../../core/speaking';
 import type { Attempt } from '../../db/db';
 import { useSettings } from '../../db/hooks';
 import { useSpeaker } from '../../speech/useSpeaker';
@@ -122,20 +123,25 @@ export function ExerciseRunner({ items, context, lessonId, onExit, onFinish, ban
     });
   }
 
-  function advance(confidence?: Confidence) {
-    if (pending) void commit(pending, confidence);
+  async function advance(confidence?: Confidence) {
+    const p = pending;
     setPending(null);
     setResponse(null);
     startedAt.current = Date.now();
+    const save = p ? commit(p, confidence).catch((e) => console.error('Réponse non enregistrée', e)) : Promise.resolve();
     if (pos + 1 < queue.length) setPos(pos + 1);
-    else finish();
+    else {
+      // La dernière réponse doit être enregistrée avant le bilan (maîtrise, série, déblocage).
+      await save;
+      finish();
+    }
   }
 
   function check() {
     if (!current || current.kind !== 'exercise' || !response || pending) return;
     const ex = current.exercise;
     const result = gradeExercise(ex, response);
-    const errorTags = detectErrors(ex, response, result, { irregulars: IRREGULAR_FORMS });
+    const errorTags = detectErrors(ex, response, result, { irregulars: irregularForms() });
     const isFirst = !firstTry.current.has(ex.id) && current.source !== 'retry';
     usedIds.current.add(ex.id);
     if (isFirst) {
@@ -146,14 +152,14 @@ export function ExerciseRunner({ items, context, lessonId, onExit, onFinish, ban
     if (result.verdict === 'wrong') {
       sfx.wrong();
       setCombo(0);
-      // Repêchage varié, inséré plus loin dans la séance (au plus 2 par item).
-      const key = current.source === 'retry' ? ex.kcIds[0] ?? ex.id : ex.id;
+      // Repêchage varié, inséré plus loin dans la séance : au plus 2 par exercice d'origine, même en chaîne.
+      const key = current.retryOf ?? ex.id;
       const n = (retries.current.get(key) ?? 0) + 1;
       if (n <= 2) {
         retries.current.set(key, n);
         // Exclure aussi ce qui reste à venir : sinon le repêchage ferait doublon avec un item de la leçon.
         const upcoming = queue.slice(pos + 1).flatMap((i) => (i.kind === 'exercise' ? [i.exercise.id] : []));
-        const retry = retryItem(ex, current, new Set([...usedIds.current, ...upcoming]), n);
+        const retry = { ...retryItem(ex, current, new Set([...usedIds.current, ...upcoming]), n), retryOf: key };
         setQueue((q) => {
           const at = Math.min(q.length, pos + 1 + RETRY_GAP);
           return [...q.slice(0, at), retry, ...q.slice(at)];
@@ -337,7 +343,7 @@ function Feedback({
                 <p className="small">
                   <b>Attendu : </b>
                   {result.expected.split(' ').map((w, i) => (
-                    <span key={i} style={missing.has(w.toLowerCase().replace(/[.,!?]/g, '')) ? { color: 'var(--danger)', fontWeight: 800, textDecoration: 'underline' } : undefined}>
+                    <span key={i} style={words(w).some((x) => missing.has(x)) ? { color: 'var(--danger)', fontWeight: 800, textDecoration: 'underline' } : undefined}>
                       {w}{' '}
                     </span>
                   ))}

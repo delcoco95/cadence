@@ -12,7 +12,9 @@ import { PracticeHub } from './features/practice/PracticeHub';
 import { ProgressScreen } from './features/progress/ProgressScreen';
 import { PlacementTest } from './features/placement/PlacementTest';
 import { UnitStepPlayer } from './features/unit/UnitStepPlayer';
-import { DumbbellIcon, HomeIcon, PathIcon, ProfileIcon } from './ui/Icons';
+import { ChatIcon, DumbbellIcon, HomeIcon, PathIcon, ProfileIcon } from './ui/Icons';
+import { ConversationHub } from './features/conversation/ConversationHub';
+import { ScenePlayer } from './features/conversation/ScenePlayer';
 import { setSoundEnabled } from './ui/sfx';
 import { CourseSetup } from './features/onboarding/CourseSetup';
 import { activateCourse, loadCourse } from './content';
@@ -27,6 +29,7 @@ function TabBar() {
       <nav>
         <NavLink to="/" end className={tab}><HomeIcon />Accueil</NavLink>
         <NavLink to="/path" className={tab}><PathIcon />Parcours</NavLink>
+        <NavLink to="/talk" end className={tab}><ChatIcon />Parler</NavLink>
         <NavLink to="/practice" end className={tab}><DumbbellIcon />Réviser</NavLink>
         <NavLink to="/profile" className={tab}><ProfileIcon />Profil</NavLink>
       </nav>
@@ -46,7 +49,9 @@ function WithTabs({ children }: { children: ReactNode }) {
 /** La clé remonte le lecteur quand on passe d'une leçon à la suivante. */
 function LessonRoute() {
   const { lessonId } = useParams();
-  return <LessonPlayer key={lessonId} />;
+  // La clé de navigation remonte aussi le lecteur quand on relance la même leçon (« Leçon suivante » sur une leçon déjà finie).
+  const location = useLocation();
+  return <LessonPlayer key={`${lessonId}-${location.key}`} />;
 }
 
 /** La clé recrée la séance quand on passe d'un type de séance à un autre. */
@@ -117,6 +122,8 @@ export function App() {
           <Route path="/practice/:focus" element={<PracticeRoute />} />
           <Route path="/unit/:unitId/:kind" element={<UnitRoute />} />
           <Route path="/placement" element={<PlacementTest />} />
+          <Route path="/talk" element={<WithTabs><ConversationHub /></WithTabs>} />
+          <Route path="/talk/:sceneId" element={<ScenePlayer />} />
           <Route path="*" element={<WithTabs><Home /></WithTabs>} />
         </Routes>
       </HashRouter>

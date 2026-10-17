@@ -20,8 +20,7 @@ export function UnlockCard() {
   }
 
   const unlock = async () => {
-    await markUnlocked();
-    runShortcut(settings.unlockShortcutName);
+    if (await markUnlocked()) runShortcut(settings.unlockShortcutName);
   };
 
   return (

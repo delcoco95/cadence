@@ -16,7 +16,15 @@ export interface IntroCard {
 }
 
 export type SessionItem =
-  | { kind: 'exercise'; exercise: Exercise; source: SessionSource; cardId?: string; shuffleSeed?: string }
+  | {
+      kind: 'exercise';
+      exercise: Exercise;
+      source: SessionSource;
+      cardId?: string;
+      shuffleSeed?: string;
+      /** Exercice d'origine d'un repêchage (plafond de repêchages par exercice, même en chaîne) */
+      retryOf?: string;
+    }
   | { kind: 'intro'; intro: IntroCard; cardId: string };
 
 export interface NewItem {

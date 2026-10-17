@@ -37,11 +37,23 @@ export function LessonPlayer() {
     [lesson, settings?.speakingEnabled],
   );
   // Fin de leçon : quelques notions vues avant, sans aide (pratique mélangée + récupération espacée).
-  const [recap, setRecap] = useState<SessionItem[]>([]);
+  // null tant que le récap n'est pas prêt : le lecteur fige sa liste au démarrage, il faut l'attendre.
+  const [recap, setRecap] = useState<SessionItem[] | null>(null);
   useEffect(() => {
-    if (lesson) void lessonRecap(lesson).then(setRecap);
+    if (!lesson) return;
+    let alive = true;
+    // Sur un vieux téléphone, la lecture de l'historique peut traîner : au-delà de 2 s, on part sans récap.
+    const timeout = window.setTimeout(() => alive && setRecap((r) => r ?? []), 2000);
+    void lessonRecap(lesson)
+      .catch(() => [])
+      .then((r) => alive && setRecap((prev) => prev ?? r));
+    return () => {
+      alive = false;
+      window.clearTimeout(timeout);
+    };
   }, [lesson]);
-  const items = useMemo(() => [...lessonItems, ...recap], [lessonItems, recap]);
+  const items = useMemo(() => [...lessonItems, ...(recap ?? [])], [lessonItems, recap]);
+  const ready = recap !== null && !!settings;
 
   if (!lesson) {
     return (
@@ -107,7 +119,9 @@ export function LessonPlayer() {
         <ExplanationCard key={i} section={s} onSpeak={say} />
       ))}
       <div className="bottom-action">
-        <button className="btn" onClick={() => setPhase('exercise')}>Commencer les exercices</button>
+        <button className="btn" disabled={!ready} onClick={() => setPhase('exercise')}>
+          {ready ? 'Commencer les exercices' : 'Préparation…'}
+        </button>
       </div>
     </div>
   );

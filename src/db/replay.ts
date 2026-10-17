@@ -1,5 +1,5 @@
 import type { Attempt } from './db';
-import { resolveExercise, IRREGULAR_FORMS } from './meta';
+import { resolveExercise, irregularForms } from './meta';
 import { emptyMastery, observe, type KcMastery } from '../core/mastery';
 import { evidenceOf } from '../core/evidence';
 import { detectErrors, type ErrorEvent } from '../core/errors';
@@ -43,7 +43,7 @@ export function replayAttempts(attempts: Attempt[]): { masteries: KcMastery[]; e
       response = undefined;
     }
     if (!response || (response.kind === 'choice' && a.exerciseId.startsWith('gen-'))) continue;
-    const tags = a.errorTags ?? detectErrors(ex, response, gradeExercise(ex, response), { irregulars: IRREGULAR_FORMS });
+    const tags = a.errorTags ?? detectErrors(ex, response, gradeExercise(ex, response), { irregulars: irregularForms() });
     for (const tag of tags) errors.push({ tag, kcId: kcForError(ex, tag), exerciseId: a.exerciseId, at: a.at });
   }
   return { masteries: [...masteries.values()], errors };

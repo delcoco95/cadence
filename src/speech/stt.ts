@@ -68,7 +68,17 @@ export function startListening(lang: string, h: ListenHandlers): Listening | nul
     h.onError('start-failed');
     return null;
   }
-  return { stop: () => rec.stop(), abort: () => rec.abort() };
+  return {
+    stop: () => rec.stop(),
+    // Annuler = plus aucun rappel : sinon la fin asynchrone d'une écoute abandonnée deviendrait
+    // la réponse de l'exercice suivant.
+    abort: () => {
+      rec.onresult = null;
+      rec.onerror = null;
+      rec.onend = null;
+      rec.abort();
+    },
+  };
 }
 
 /** Erreurs qui signifient « le micro ne marchera pas ici » (on bascule sur la dictée du clavier). */

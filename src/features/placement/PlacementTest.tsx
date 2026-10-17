@@ -48,6 +48,9 @@ export function PlacementTest() {
   const [answer, setAnswer] = useState<ExerciseResponse | null>(null);
   const [result, setResult] = useState<{ result: PlacementResult; id: number } | null>(null);
   const startedAt = useRef(Date.now());
+  // Verrou : un double toucher sur la dernière réponse enregistrerait le test deux fois.
+  const [finishing, setFinishing] = useState(false);
+  const locked = useRef(false);
 
   const say = useSpeaker(ping);
 
@@ -66,6 +69,8 @@ export function PlacementTest() {
   }
 
   async function finish(all: PlacementResponse[]) {
+    locked.current = true;
+    setFinishing(true);
     const r = placementResult(all, UNITS, COURSE.placementUnitLevels);
     const id = await savePlacement(r, all);
     sfx.complete();
@@ -74,7 +79,7 @@ export function PlacementTest() {
   }
 
   function submit(dontKnow = false) {
-    if (!item || (!answer && !dontKnow)) return;
+    if (!item || (!answer && !dontKnow) || locked.current) return;
     const correct = !dontKnow && !!answer && gradeExercise(item, answer).verdict === 'correct';
     sfx.tap();
     const r: PlacementResponse = { ...item.placement, correct };
@@ -107,7 +112,7 @@ export function PlacementTest() {
             <div className="row"><span className="icon-tile tone-sun"><LetterIcon /></span><p className="small"><b>Pas de correction pendant le test.</b> Si tu ne sais pas, dis-le : deviner fausse le résultat.</p></div>
           </div>
           <p className="note">
-            Inspiré du format des tests de placement officiels (Cambridge, Oxford, EF SET) et de l’échelle européenne CECRL.
+            Construit sur le format des tests de placement courants et sur l’échelle européenne CECRL.
             Questions originales. Le résultat est une estimation, pas une certification.
           </p>
         </div>
@@ -158,8 +163,8 @@ export function PlacementTest() {
             shuffleSeed={`${item.id}-${startedAt.current}`}
           />
           <div className="bottom-action stack" style={{ gap: 4 }}>
-            <button className="btn" disabled={!answer} onClick={() => submit()}>Valider</button>
-            <button className="btn ghost" onClick={() => submit(true)}>Je ne sais pas</button>
+            <button className="btn" disabled={!answer || finishing} onClick={() => submit()}>Valider</button>
+            <button className="btn ghost" disabled={finishing} onClick={() => submit(true)}>Je ne sais pas</button>
           </div>
         </>
       )}

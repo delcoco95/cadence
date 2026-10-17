@@ -753,3 +753,70 @@ code, .kbd { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 
 .score-meter .mark { position: absolute; top: -4px; bottom: -4px; width: 3px; border-radius: 2px; background: var(--text); }
 .node-wrap.has-tip { margin-top: 38px; }
 .node-tip { z-index: 2; }
+
+/* ───────────── Scènes de conversation ───────────── */
+.scene-card { display: flex; gap: 12px; align-items: flex-start; text-decoration: none; color: inherit; }
+.talk-goal { padding: 10px 12px; border-radius: 12px; background: var(--primary-soft); font-size: 15px; }
+.phrase-row {
+  display: flex; gap: 10px; align-items: flex-start; text-align: left; width: 100%;
+  padding: 8px 4px; border: none; background: none; color: inherit; border-bottom: 1px solid var(--border);
+}
+.phrase-row:last-of-type { border-bottom: none; }
+.phrase-row svg { width: 20px; height: 20px; flex: none; margin-top: 2px; color: var(--primary); }
+.talk-screen { padding-bottom: 0; }
+.talk-log { display: flex; flex-direction: column; gap: 12px; flex: 1; padding-bottom: 8px; }
+.talk-msg { display: flex; flex-direction: column; max-width: 86%; }
+.talk-msg.npc { align-self: flex-start; }
+.talk-msg.me { align-self: flex-end; }
+.talk-name { font-size: 12px; font-weight: 800; color: var(--muted); margin: 0 0 3px 6px; }
+.talk-bubble { padding: 10px 14px; border-radius: 18px; background: var(--surface); border: 1px solid var(--border); }
+.talk-msg.npc .talk-bubble { border-bottom-left-radius: 6px; }
+.talk-msg.me .talk-bubble { background: var(--primary); color: var(--on-primary, #fff); border-color: transparent; border-bottom-right-radius: 6px; }
+.talk-msg.me.missed .talk-bubble { background: var(--surface-2); color: var(--text); border: 1px dashed var(--border); }
+.talk-input {
+  position: sticky; bottom: 0; display: flex; flex-direction: column; gap: 10px;
+  padding: 12px 0 calc(var(--safe-bottom, 0px) + 12px); background: var(--bg); border-top: 1px solid var(--border);
+}
+.talk-task { font-size: 15px; }
+.talk-hint { padding: 8px 12px; border-radius: 12px; background: var(--sun-soft); display: flex; flex-direction: column; gap: 4px; }
+.icon-btn.small { width: 34px; height: 34px; border-radius: 10px; }
+.icon-btn.small svg { width: 18px; height: 18px; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Identité Cadence (v0.5) : relief doux et formes en pilule, au lieu des
+   boutons « en relief à bordure basse » typiques d'autres apps d'apprentissage.
+   Ces règles, placées en dernier, l'emportent sur les styles précédents.
+   ───────────────────────────────────────────────────────────────────────── */
+.btn, .btn.small {
+  border-radius: 999px; text-transform: none; letter-spacing: 0; font-weight: 800;
+  margin-bottom: 0;
+  box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--bd) 70%, transparent);
+}
+.btn:active, .btn.small:active { transform: scale(0.97); box-shadow: 0 2px 8px -6px var(--bd); }
+.cta-card, .unit-banner { box-shadow: 0 10px 24px -14px var(--unit-dark); }
+.badge-medal, .voice .play { box-shadow: 0 6px 14px -8px rgb(0 0 0 / 0.35) !important; }
+.badge.locked .badge-medal { box-shadow: none !important; }
+.unit.locked .unit-banner { box-shadow: none; }
+.mic-btn, .mic-btn.on { box-shadow: 0 10px 24px -10px color-mix(in srgb, var(--primary) 70%, transparent); }
+.mic-btn.on { box-shadow: 0 10px 24px -10px color-mix(in srgb, var(--danger) 70%, transparent); }
+
+/* Parcours : frise verticale d'étapes */
+.unit { align-items: stretch; gap: 10px; }
+.timeline { list-style: none; margin: 0; padding: 0 0 0 4px; display: flex; flex-direction: column; gap: 2px; position: relative; }
+.timeline::before {
+  content: ''; position: absolute; left: 31px; top: 24px; bottom: 24px; width: 3px; border-radius: 3px;
+  background: color-mix(in srgb, var(--unit) 25%, var(--surface-2));
+}
+.step-row .step-hit {
+  display: flex; align-items: center; gap: 14px; width: 100%; padding: 8px 6px; border: none; border-radius: 16px;
+  background: none; color: inherit; text-align: left; position: relative;
+}
+.step-row.current .step-hit { background: color-mix(in srgb, var(--unit) 10%, transparent); }
+.step-row .node {
+  width: 52px; height: 52px; flex: none; border-radius: 16px; box-shadow: none; animation: none;
+}
+.step-row .node svg { width: 26px; height: 26px; }
+.step-row.current .node { outline: 3px solid color-mix(in srgb, var(--unit) 35%, transparent); outline-offset: 3px; }
+.step-text { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.step-text b { font-size: 16px; font-weight: 800; line-height: 1.2; }
+.step-row.locked .step-text b { color: var(--muted); }

@@ -8,12 +8,12 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['icons/apple-touch-icon.png', 'icons/favicon.svg'],
       manifest: {
-        name: 'Cadence — English',
+        name: 'Cadence — langues',
         short_name: 'Cadence',
-        description: 'Apprendre l’anglais de A2 à C2, un peu chaque jour.',
+        description: 'Apprendre l’anglais, l’italien ou l’espagnol, un peu chaque jour.',
         lang: 'fr',
         start_url: './',
         scope: './',
@@ -37,7 +37,8 @@ export default defineConfig({
             handler: 'CacheFirst',
             options: {
               cacheName: 'cadence-voices',
-              expiration: { maxEntries: 6000 },
+              // 8 voix × environ 4 000 phrases : une limite plus basse effacerait une voix téléchargée en en ajoutant une autre.
+              expiration: { maxEntries: 40000 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },

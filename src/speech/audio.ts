@@ -19,7 +19,7 @@ export interface CadenceVoiceInfo {
 
 export const CADENCE_VOICES: Record<CadenceAccent, Record<CadenceVoice, CadenceVoiceInfo>> = {
   'en-US': {
-    female: { id: 'af_heart', name: 'Lily', label: 'Voix féminine' },
+    female: { id: 'af_heart', name: 'Nora', label: 'Voix féminine' },
     male: { id: 'am_michael', name: 'Michael', label: 'Voix masculine' },
   },
   'en-GB': {
@@ -88,7 +88,8 @@ if (typeof window !== 'undefined') {
     p.play()
       .catch(() => undefined)
       .finally(() => {
-        p.pause();
+        // Ne pas couper un vrai clip qui aurait démarré entre-temps (Safari résout ce play() en retard).
+        if (!p.getAttribute('src')) p.pause();
         p.muted = false;
       });
     window.removeEventListener('pointerdown', unlock);
@@ -115,48 +116,70 @@ async function blobUrl(url: string): Promise<string> {
 }
 
 /**
+ * Jeton de lecture : chaque nouvelle demande (ou un arrêt) invalide les précédentes. Une lecture dont le
+ * téléchargement se termine en retard ne démarre donc jamais par-dessus la suivante, ni pendant le micro.
+ */
+let generation = 0;
+
+/** played : lu · missing : pas de fichier (la synthèse du téléphone peut prendre le relais) · cancelled : remplacé ou arrêté · failed : erreur de lecture. */
+export type ClipResult = 'played' | 'missing' | 'cancelled' | 'failed';
+
+/**
  * Joue le clip d'un texte avec la voix demandée ; si cette voix n'a pas encore le fichier, l'autre voix
  * de la même langue prend le relais (en anglais : d'abord la même voix de l'autre accent).
- * Renvoie false si aucun clip n'existe.
  */
-export async function playClip(text: string, accent: CadenceAccent, gender: CadenceVoice, rate = 1): Promise<boolean> {
+export async function playClip(text: string, accent: CadenceAccent, gender: CadenceVoice, rate = 1): Promise<ClipResult> {
+  const my = ++generation;
   await manifest;
+  if (my !== generation) return 'cancelled';
   const other: CadenceVoice = gender === 'female' ? 'male' : 'female';
   const candidates =
     accent === 'en-US' || accent === 'en-GB'
       ? [CADENCE_VOICES[accent][gender], CADENCE_VOICES[accent === 'en-US' ? 'en-GB' : 'en-US'][gender]]
       : [CADENCE_VOICES[accent][gender], CADENCE_VOICES[accent][other]];
   const voice = candidates.find((v) => hasClip(text, v.id));
-  if (!voice) return false;
+  if (!voice) return 'missing';
   try {
     const p = getPlayer();
     p.pause();
-    p.src = await blobUrl(clipUrl(text, voice.id));
+    const src = await blobUrl(clipUrl(text, voice.id));
+    if (my !== generation) return 'cancelled';
+    p.src = src;
     p.playbackRate = rate;
     // Ralentir sans rendre la voix grave.
     (p as HTMLAudioElement & { preservesPitch?: boolean }).preservesPitch = true;
     (p as HTMLAudioElement & { webkitPreservesPitch?: boolean }).webkitPreservesPitch = true;
     await p.play();
-    return true;
-  } catch {
-    return false;
+    return my === generation ? 'played' : 'cancelled';
+  } catch (e) {
+    if (my !== generation || (e as Error)?.name === 'AbortError') return 'cancelled';
+    return 'failed';
   }
 }
 
 export function stopClip(): void {
+  generation++;
   player?.pause();
 }
 
 /** Télécharge toute une voix pour l'utiliser hors ligne (le service worker met chaque fichier en cache). */
-export async function downloadVoice(voiceId: string, onProgress: (done: number, total: number) => void): Promise<void> {
+export async function downloadVoice(
+  voiceId: string,
+  onProgress: (done: number, total: number) => void,
+): Promise<{ done: number; failed: number }> {
   const keys = [...((await manifest).get(voiceId) ?? [])];
   let done = 0;
+  let failed = 0;
   const queue = [...keys];
   const worker = async () => {
     for (let key = queue.shift(); key; key = queue.shift()) {
-      await fetch(`${BASE}${voiceId}/${key}.mp3`).catch(() => undefined);
-      onProgress(++done, keys.length);
+      // Seuls les fichiers réellement reçus comptent : une erreur réseau ne doit pas afficher « disponible hors ligne ».
+      const ok = await fetch(`${BASE}${voiceId}/${key}.mp3`).then((r) => r.ok, () => false);
+      if (ok) done++;
+      else failed++;
+      onProgress(done, keys.length);
     }
   };
   await Promise.all(Array.from({ length: 6 }, worker));
+  return { done, failed };
 }

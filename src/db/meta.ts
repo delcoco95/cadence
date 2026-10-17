@@ -4,13 +4,25 @@ import { irregularExercise, vocabExercise, type IrregularMode, type VocabMode } 
 import { reformat } from '../core/retry';
 import type { IrregularForms } from '../core/errors';
 
-/** Formes des irréguliers pour les détecteurs d'erreurs. */
-export const IRREGULAR_FORMS: IrregularForms = new Map(
-  IRREGULAR_VERBS.map((v) => [
-    v.base,
-    { past: v.past.split('/').map((s) => s.trim()), participle: v.participle.split('/').map((s) => s.trim()) },
-  ]),
-);
+let formsFor: typeof IRREGULAR_VERBS | null = null;
+let forms: IrregularForms = new Map();
+
+/**
+ * Formes des irréguliers du cours actif, pour les détecteurs d'erreurs. Recalculées quand la langue change :
+ * une table figée au chargement resterait anglaise en italien et en espagnol.
+ */
+export function irregularForms(): IrregularForms {
+  if (formsFor !== IRREGULAR_VERBS) {
+    formsFor = IRREGULAR_VERBS;
+    forms = new Map(
+      IRREGULAR_VERBS.map((v) => [
+        v.base,
+        { past: v.past.split('/').map((s) => s.trim()), participle: v.participle.split('/').map((s) => s.trim()) },
+      ]),
+    );
+  }
+  return forms;
+}
 
 const VOCAB_MODES: VocabMode[] = ['en_fr', 'listen', 'fr_en', 'cloze', 'say'];
 const IRR_MODES: Record<string, IrregularMode> = { past: 'past', pp: 'participle', three: 'three', say: 'say' };

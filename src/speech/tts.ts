@@ -37,8 +37,9 @@ export function speak(text: string, accent: CadenceAccent, opts: SpeakOptions = 
   stopSpeaking();
   const gender = opts.voice?.gender ?? 'female';
   const rate = Math.min(1.1, (opts.rate ?? 0.9) / 0.9);
-  void playClip(text, accent, gender, rate).then((ok) => {
-    if (!ok) speakDevice(text, accent, gender, opts.rate ?? 0.9);
+  void playClip(text, accent, gender, rate).then((result) => {
+    // Pas de repli si la lecture a été remplacée ou arrêtée : sinon la voix du téléphone parlerait par-dessus.
+    if (result === 'missing' || result === 'failed') speakDevice(text, accent, gender, opts.rate ?? 0.9);
   });
 }
 

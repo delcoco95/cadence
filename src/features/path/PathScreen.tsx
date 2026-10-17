@@ -5,13 +5,10 @@ import { getLesson, LEVELS_OF_COURSE, UNITS } from '../../content';
 import type { Step, UnitView } from '../../core/units';
 import { loadPath, stepPath } from '../../db/units';
 import { useSettings } from '../../db/hooks';
-import { Mascot } from '../../ui/Mascot';
 import { unitLabel, unitStyle } from '../../ui/units';
 import { BookIcon, CheckIcon, CrownIcon, DumbbellIcon, LockIcon, RefreshIcon, StarIcon, TargetIcon, TrophyIcon } from '../../ui/Icons';
 import { ProgressBar } from '../../ui/ProgressBar';
 
-/** Décalage horizontal des pastilles : le chemin serpente. */
-const WAVE = [0, 46, 70, 46, 0, -46, -70, -46];
 
 const VIA_LABEL = { challenge: 'Validée', placement: 'Validée par le test', jump: 'Validée (saut)', self: 'Ouverte (niveau choisi)' } as const;
 
@@ -39,7 +36,6 @@ export function PathScreen() {
   const navigate = useNavigate();
   const [sheet, setSheet] = useState<Sheet | null>(null);
   if (!path) return null;
-  let wave = 0;
   const next = path.next;
   const isNext = (s: Step) => !!next && next.unitId === s.unitId && next.kind === s.kind && next.lessonId === s.lessonId;
 
@@ -91,9 +87,9 @@ export function PathScreen() {
                   <Link to={`/unit/${v.unit.id}/challenge?jump=1`} className="btn small secondary" style={{ flex: 'none' }}>Sauter ici</Link>
                 )}
               </div>
-              <div className="path-nodes">
+              {/* Frise verticale : chaque étape est une ligne lisible (titre, statut), pas une pastille isolée. */}
+              <ol className="timeline">
                 {v.steps.map((s) => {
-                  const offset = WAVE[wave++ % WAVE.length];
                   const nextHere = isNext(s);
                   const cls = [
                     'node',
@@ -103,30 +99,31 @@ export function PathScreen() {
                   const label = stepLabel(s);
                   const key = `${s.kind}-${s.lessonId ?? s.unitId}`;
                   return (
-                    <div key={key} className={`node-wrap${nextHere ? ' has-tip' : ''}`} style={{ transform: `translateX(${offset}px)` }}>
-                      {nextHere && <span className="node-tip">{s.kind === 'challenge' ? 'Défi !' : 'Commencer'}</span>}
+                    <li key={key} className={`step-row${nextHere ? ' current' : ''} ${s.status}`}>
                       <button
-                        className={cls}
-                        style={{ border: 'none' }}
+                        className="step-hit"
                         aria-label={`${label}${s.status === 'locked' ? ', verrouillé' : s.status === 'done' ? ', terminé' : ''}`}
                         onClick={() => (s.status === 'locked' ? setSheet({ view: v, step: s }) : navigate(stepPath(s)))}
                       >
-                        {nextHere && <span className="node-ring" />}
-                        <StepIcon s={s} />
-                      </button>
-                      <span className="node-label">
-                        {label}
-                        {s.kind === 'challenge' && s.score !== undefined && s.status !== 'done' && <><br />meilleur : {Math.round(s.score * 100)} %</>}
-                      </span>
-                      {nextHere && (
-                        <span className="path-mascot" style={offset >= 0 ? { right: 'calc(100% + 18px)' } : { left: 'calc(100% + 18px)' }}>
-                          <Mascot mood="happy" size={78} />
+                        <span className={cls}><StepIcon s={s} /></span>
+                        <span className="step-text">
+                          <b>{label}</b>
+                          <span className="small muted">
+                            {s.status === 'done'
+                              ? 'Terminé'
+                              : s.status === 'locked'
+                                ? 'Verrouillé'
+                                : s.kind === 'challenge'
+                                  ? s.score !== undefined ? `Meilleur score : ${Math.round(s.score * 100)} %` : 'Défi de fin d’unité'
+                                  : 'À faire'}
+                          </span>
                         </span>
-                      )}
-                    </div>
+                        {nextHere && <span className="chip primary">{s.kind === 'challenge' ? 'Défi' : 'Suivant'}</span>}
+                      </button>
+                    </li>
                   );
                 })}
-              </div>
+              </ol>
             </section>
           );
         });

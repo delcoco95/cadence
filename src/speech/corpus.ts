@@ -4,6 +4,7 @@ import { activeLanguage } from '../core/lang';
 import { irregularExercise, irregularIntro, vocabExercise, vocabIntro, type IrregularMode, type VocabMode } from '../core/generators';
 import { reformat } from '../core/retry';
 import { speechKey } from './audioKey';
+import type { Scene } from '../content/scenes/types';
 
 /**
  * Tous les textes que l'app peut lire à voix haute dans le cours actif. Sert à pré-générer l'audio
@@ -21,6 +22,22 @@ function exerciseTexts(e: Exercise): string[] {
 
 const VOCAB_MODES: VocabMode[] = ['en_fr', 'listen', 'fr_en', 'cloze', 'say'];
 const IRREGULAR_MODES: IrregularMode[] = ['past', 'participle', 'three', 'say'];
+
+/** Tout ce qu'une scène fait dire à voix haute : répliques, réactions + réplique suivante, clôture, aides et expressions. */
+export function sceneTexts(scenes: Scene[]): string[] {
+  const out: string[] = [];
+  for (const s of scenes) {
+    out.push(s.closing, ...s.phrases.map((p) => p.text));
+    for (const t of Object.values(s.turns)) {
+      out.push(t.npc, t.fallback, t.hints[2], t.model);
+      for (const i of t.expect) {
+        if (!i.react) continue;
+        out.push(`${i.react} ${i.next === 'end' ? s.closing : s.turns[i.next].npc}`);
+      }
+    }
+  }
+  return out;
+}
 
 export function speechCorpus(): string[] {
   const texts: string[] = [activeLanguage().voiceSample];

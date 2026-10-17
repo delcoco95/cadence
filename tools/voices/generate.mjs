@@ -10,7 +10,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { fork } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-// Lily, Michael (américain) ; Emma, George (britannique)
+// Nora, Michael (américain) ; Emma, George (britannique)
 export const VOICES = ['af_heart', 'am_michael', 'bf_emma', 'bm_george'];
 // Voix de chaque corpus, pour le manifeste : Sara, Nicola (italien) ; Dora, Alex (espagnol)
 const MANIFEST = {

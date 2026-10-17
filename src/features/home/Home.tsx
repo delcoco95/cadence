@@ -2,12 +2,12 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import { getLesson, UNITS } from '../../content';
 import { lessonsDoneToday, loadStats, weekActivity } from '../../db/activity';
-import { useSettings, useToday } from '../../db/hooks';
+import { useDayKey, useSettings, useToday } from '../../db/hooks';
+import { applyUpdate, useUpdateAvailable } from '../../ui/update';
 import { nextStep, stepPath } from '../../db/units';
 import { ERROR_LABELS } from '../../core/errors';
 import { learningStats } from '../../db/learning';
 import { kcLabel } from '../../content/kcs';
-import { dayKey } from '../../core/dates';
 import { ProgressBar } from '../../ui/ProgressBar';
 import { Ring } from '../../ui/Ring';
 import { MascotSays } from '../../ui/Mascot';
@@ -23,9 +23,12 @@ const QUEST_XP = 50;
 export function Home() {
   const settings = useSettings();
   const today = useToday();
-  const stats = useLiveQuery(() => loadStats());
-  const week = useLiveQuery(() => weekActivity());
-  const lessonsToday = useLiveQuery(() => lessonsDoneToday());
+  // Le jour en dépendance : la série, la semaine et les quêtes changent à minuit même si l'écran reste ouvert.
+  const day = useDayKey();
+  const updateReady = useUpdateAvailable();
+  const stats = useLiveQuery(() => loadStats(), [day]);
+  const week = useLiveQuery(() => weekActivity(), [day]);
+  const lessonsToday = useLiveQuery(() => lessonsDoneToday(), [day]);
   const step = useLiveQuery(() => nextStep());
   const learning = useLiveQuery(() => learningStats());
   const p = useProfileText();
@@ -39,7 +42,7 @@ export function Home() {
   const pct = Math.min(1, active / goalSeconds);
   const streak = stats?.streak.current ?? 0;
   const xpToday = today?.xp ?? 0;
-  const seed = Number(dayKey().replaceAll('-', ''));
+  const seed = Number(day.replaceAll('-', ''));
   const minutesDone = Math.floor(active / 60);
   const minutesLeft = Math.max(1, Math.ceil((goalSeconds - active) / 60));
   const lessonStarted = (lessonsToday ?? 0) > 0;
@@ -52,6 +55,12 @@ export function Home() {
 
   return (
     <div className="screen">
+      {updateReady && (
+        <div className="card flat row" role="status">
+          <p className="small grow"><b>Nouvelle version disponible.</b> Elle s’installe en quelques secondes.</p>
+          <button className="btn small" onClick={applyUpdate}>Mettre à jour</button>
+        </div>
+      )}
       <header className="topbar">
         <span className="pill level">{settings?.estimatedBand ?? settings?.startLevel ?? 'A2'}</span>
         <div className="pills">

@@ -29,9 +29,17 @@ export async function addActivity(seconds: number, xp = 0): Promise<boolean> {
   });
 }
 
-export async function markUnlocked(): Promise<void> {
-  const today = await ensureToday();
-  await db.dailyActivity.put({ ...today, unlockedAt: Date.now() });
+/**
+ * Note le déblocage du jour. Refusé si l'objectif d'AUJOURD'HUI n'est pas atteint : un écran resté ouvert
+ * depuis la veille ne doit pas pouvoir débloquer les apps. Renvoie true si le déblocage est permis.
+ */
+export async function markUnlocked(): Promise<boolean> {
+  return db.transaction('rw', db.dailyActivity, db.settings, async () => {
+    const today = await ensureToday();
+    if (!today.goalMetAt) return false;
+    await db.dailyActivity.put({ ...today, unlockedAt: Date.now() });
+    return true;
+  });
 }
 
 /** Un changement d'objectif s'applique à aujourd'hui s'il n'est pas encore atteint. */

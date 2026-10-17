@@ -159,7 +159,7 @@ function ChallengeResult({ unitId, summary, outcome, jump }: { unitId: string; s
                 ? `Niveau ${unit.cefr} terminé ! Le niveau ${nextUnit.cefr} est débloqué.`
                 : nextUnit
                   ? `L’unité « ${nextUnit.title} » est débloquée.`
-                  : p.t('Tu as terminé tout le parcours, de A2 à C2. Bravo !')}
+                  : p.t(`Tu as terminé tout le parcours, de ${UNITS[0]?.cefr ?? 'A1'} à C2. Bravo !`)}
           </p>
         </div>
         <section className="card stack" style={{ gap: 10 }}>

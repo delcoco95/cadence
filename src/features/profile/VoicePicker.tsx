@@ -15,14 +15,21 @@ export function VoicePicker({ value, onChange }: Props) {
   const voices = CADENCE_VOICES[locale];
   const selectedId = voices[value.cadenceVoice].id;
   const [ready, setReady] = useState(false);
-  const [download, setDownload] = useState<{ id: string; done: number; total: number } | null>(null);
+  const [download, setDownload] = useState<{ id: string; done: number; total: number; finished: boolean; failed: number } | null>(null);
   useEffect(() => {
     void audioReady().then(() => setReady(true));
   }, []);
   const rate = Math.min(1.1, value.speechRate / 0.9);
   const listen = (accent: CadenceAccent, v: CadenceVoice) => void playClip(voiceSample(accent), accent, v, rate);
   const count = ready ? clipCount(selectedId) : 0;
-  const busy = !!download && download.id === selectedId && download.done < download.total;
+  const busy = !!download && download.id === selectedId && !download.finished;
+  const startDownload = () => {
+    const id = selectedId;
+    setDownload({ id, done: 0, total: count, finished: false, failed: 0 });
+    void downloadVoice(id, (done, total) => setDownload((d) => (d && d.id === id ? { ...d, done, total } : d))).then((r) =>
+      setDownload((d) => (d && d.id === id ? { ...d, done: r.done, finished: true, failed: r.failed } : d)),
+    );
+  };
 
   return (
     <div className="stack" style={{ gap: 14 }}>
@@ -81,12 +88,14 @@ export function VoicePicker({ value, onChange }: Props) {
           className="btn secondary small"
           style={{ width: '100%' }}
           disabled={busy}
-          onClick={() => void downloadVoice(selectedId, (done, total) => setDownload({ id: selectedId, done, total }))}
+          onClick={startDownload}
         >
           {download?.id === selectedId
             ? busy
-              ? `Téléchargement… ${Math.round((download.done / download.total) * 100)} %`
-              : 'Voix disponible hors ligne'
+              ? `Téléchargement… ${Math.round((download.done / Math.max(1, download.total)) * 100)} %`
+              : download.failed > 0
+                ? `${download.failed} fichiers non téléchargés : réessayer`
+                : 'Voix disponible hors ligne'
             : `Télécharger ${voices[value.cadenceVoice].name} pour le hors-ligne (~${Math.round((count * 24) / 1024)} Mo)`}
         </button>
       )}

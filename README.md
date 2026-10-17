@@ -42,7 +42,7 @@ Les leçons sont dans `src/content/<niveau>/*.ts` (types dans `src/content/types
 
 ## Voix (audio pré-généré)
 
-Les phrases sont lues par deux voix naturelles, **Lily** (féminine) et **Michael** (masculine), générées une fois pour toutes
+Les phrases sont lues par deux voix naturelles, **Nora** (féminine) et **Michael** (masculine), générées une fois pour toutes
 avec [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M) (modèle libre, licence Apache 2.0) : le son est identique sur tous les
 téléphones et fonctionne hors ligne. Les fichiers sont dans `public/audio/<voix>/<clé>.mp3`, la liste dans `public/audio/manifest.json`.
 Un texte sans fichier est lu par la synthèse vocale du téléphone.

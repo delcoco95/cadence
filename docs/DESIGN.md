@@ -1,6 +1,6 @@
 # Cadence — Design et expérience (v0.4)
 
-> Objectif : donner **envie d'apprendre** (esprit Duolingo, Memrise, Speakly) sans rien sacrifier de la rigueur
+> Objectif : donner **envie d’apprendre**, avec une identité propre à Cadence, sans rien sacrifier de la rigueur
 > pédagogique décrite dans [PEDAGOGY.md](PEDAGOGY.md). Le moteur (`src/core`) n'a pas changé : seule la couche
 > d'expérience a été refaite.
 
@@ -39,7 +39,7 @@
 ## 4. Voix
 
 - **Voix de Cadence (par défaut)** : audio pré-généré avec Kokoro (licence Apache 2.0), deux voix américaines naturelles,
-  **Lily** (`af_heart`) et **Michael** (`am_michael`). Identiques sur tous les téléphones, sans dépendre des voix installées.
+  **Nora** (`af_heart`) et **Michael** (`am_michael`). Identiques sur tous les téléphones, sans dépendre des voix installées.
 - Recensement des textes lus : `src/speech/corpus.ts` (leçons, défis, test de niveau, vocabulaire, verbes) ; un test vérifie
   qu'aucun texte lu n'est oublié. Clé de fichier : hachage FNV-1a du texte normalisé (`src/speech/audioKey.ts`).
 - Lecture (`src/speech/audio.ts`) : un seul élément audio débloqué au premier toucher (contrainte iOS), débit réglable sans

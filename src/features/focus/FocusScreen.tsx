@@ -23,6 +23,7 @@ export function FocusScreen() {
         <label className="toggle">
           <input
             type="checkbox"
+            aria-label="Bloquer mes apps chaque jour"
             checked={settings.blockingEnabled}
             onChange={(e) => void updateSettings({ blockingEnabled: e.target.checked })}
           />

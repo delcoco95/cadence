@@ -9,6 +9,7 @@ import { replayAttempts } from './replay';
 import type { Gender } from '../core/gender';
 import type { CadenceVoice } from '../speech/audio';
 import type { UnitRecord } from '../core/units';
+import type { TurnRecord } from '../core/scene';
 import type { PlacementBand, PlacementResponse, PlacementResult } from '../core/placement';
 
 export type ThemePref = 'system' | 'light' | 'dark';
@@ -97,7 +98,20 @@ export interface Attempt {
   /** 1 deviné · 2 pas sûr · 3 plutôt sûr · 4 certain */
   confidence?: 1 | 2 | 3 | 4;
   errorTags?: ErrorTag[];
-  context: 'lesson' | 'review' | 'drill' | 'new' | 'recap' | 'retry' | 'placement' | 'checkpoint';
+  context: 'lesson' | 'review' | 'drill' | 'new' | 'recap' | 'retry' | 'placement' | 'checkpoint' | 'scene';
+}
+
+/** Une partie jouée d'une scène de conversation (bilan conservé pour suivre les progrès à l'oral). */
+export interface SceneRun {
+  id?: number;
+  sceneId: string;
+  at: number;
+  goalReached: boolean;
+  comprehension: number;
+  precision: number;
+  autonomy: number;
+  overall: number;
+  turns: TurnRecord[];
 }
 
 export interface LessonProgress {
@@ -133,9 +147,10 @@ interface LearningTables {
   errorEvents: EntityTable<ErrorEvent, 'id'>;
   unitProgress: EntityTable<UnitRecord, 'unitId'>;
   assessments: EntityTable<PlacementRecord, 'id'>;
+  sceneRuns: EntityTable<SceneRun, 'id'>;
 }
 
-export const LEARNING_TABLES = ['attempts', 'lessonProgress', 'srsCards', 'kcEvidence', 'errorEvents', 'unitProgress', 'assessments'] as const;
+export const LEARNING_TABLES = ['attempts', 'lessonProgress', 'srsCards', 'kcEvidence', 'errorEvents', 'unitProgress', 'assessments', 'sceneRuns'] as const;
 
 /**
  * Base historique « cadence » : tables communes + progression en anglais (inchangée, pour ne rien perdre).
@@ -177,6 +192,11 @@ main.version(4).stores({
   assessments: '++id, kind, at',
 });
 
+// v5 : parties jouées des scènes de conversation
+main.version(5).stores({
+  sceneRuns: '++id, sceneId, at',
+});
+
 function learningDb(name: string) {
   const d = new Dexie(name) as Dexie & LearningTables;
   d.version(1).stores({
@@ -188,6 +208,7 @@ function learningDb(name: string) {
     unitProgress: 'unitId',
     assessments: '++id, kind, at',
   });
+  d.version(2).stores({ sceneRuns: '++id, sceneId, at' });
   return d;
 }
 
@@ -233,6 +254,9 @@ export const db = {
   },
   get assessments() {
     return LEARNING[activeLearning].assessments;
+  },
+  get sceneRuns() {
+    return LEARNING[activeLearning].sceneRuns;
   },
   transaction<U>(mode: TransactionMode, ...rest: [...(Table | Table[])[], () => Promise<U>]): Promise<U> {
     const scope = rest.slice(0, -1).flat() as Table[];
@@ -283,7 +307,7 @@ export async function getSettings(): Promise<Settings> {
     courses,
     startLevel: course?.startLevel ?? firstLevel(merged.language),
     estimatedBand: course?.estimatedBand,
-    // Ancien réglage par défaut (en-GB) ou australien : on garde la voix entendue jusqu'ici (Lily, américaine).
+    // Ancien réglage par défaut (en-GB) ou australien : on garde la voix entendue jusqu'ici (Nora, américaine).
     accent: merged.accentChosen ? (merged.accent === 'en-GB' ? 'en-GB' : 'en-US') : 'en-US',
     motivations: merged.motivations.length ? merged.motivations : merged.motivation ? [merged.motivation] : [],
   };
@@ -291,6 +315,11 @@ export async function getSettings(): Promise<Settings> {
 
 /** Le niveau (startLevel, estimatedBand) s'enregistre dans le cours de la langue active. */
 export async function updateSettings(patch: Partial<Omit<Settings, 'id'>>): Promise<void> {
+  // Lecture + écriture dans une transaction : deux modifications simultanées (prénom puis genre) ne s'écrasent pas.
+  await db.transaction('rw', db.settings, () => applySettingsPatch(patch));
+}
+
+async function applySettingsPatch(patch: Partial<Omit<Settings, 'id'>>): Promise<void> {
   const current = await getSettings();
   const next = { ...current, ...patch, id: 'me' as const };
   if ('startLevel' in patch || 'estimatedBand' in patch) {
