@@ -8,7 +8,7 @@
 
 | Principe | Traduction concrète |
 |---|---|
-| Un compagnon, pas un logiciel | **Coco**, l'oiseau mélomane (`src/ui/Mascot.tsx`), parle à l'apprenant à chaque écran clé, avec 6 humeurs : `idle`, `happy`, `cheer`, `sad`, `think`, `wow`. |
+| Un compagnon, pas un logiciel | **Coco**, la bulle de parole au casque (`src/ui/Mascot.tsx`), parle à l'apprenant à chaque écran clé, avec 6 humeurs : `idle`, `happy`, `cheer`, `sad`, `think`, `wow`. |
 | Chaque réponse est un moment | Son synthétisé (`src/ui/sfx.ts`, aucun fichier audio), panneau de feedback coloré, phrases d'encouragement variées, combo de bonnes réponses d'affilée. |
 | Une progression visible | Anneau d'objectif, quêtes du jour, calendrier de la semaine, chemin sinueux du parcours, badges. |
 | Personnel | Prénom, **accord en genre** de tous les textes français, motivation choisie à l'inscription, voix choisie. |
@@ -17,7 +17,7 @@
 
 ## 2. Design system (`src/styles/global.css`)
 
-- **Police** : Nunito Variable, sous-ensemble latin embarqué (hors ligne, environ 39 Ko).
+- **Polices** : Inter (texte) et Inter Tight (titres), sous-ensembles latins embarqués (hors ligne). Identité v0.6 reprise de nedjb.fr : noir profond / blanc cassé, accent vermillon #FF4D2E, menthe pour la réussite, erreurs en rose (jamais en vermillon).
 - **Couleurs** (tokens `:root`, mode sombre complet) : `--primary` violet, `--success` menthe, `--sun` (XP, quêtes),
   `--flame` (série), `--sky` (audio, sélection), `--pink`, `--teal`, `--danger`. Chaque teinte a sa variante `-dark` (ombre 3D) et `-soft` (fond).
 - **Relief** : boutons, options, pastilles et cartes ont une bordure basse de 4 px qui s'écrase au toucher.

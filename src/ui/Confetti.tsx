@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-const COLORS = ['#6C4DF6', '#1FBF75', '#FFB020', '#FF5FA2', '#2FA8FF', '#FF7A1A'];
+const COLORS = ['#FF4D2E', '#00F59A', '#F5F5F0', '#FFC94D', '#6AA8FF', '#C79BFF'];
 
 /** Pluie de confettis plein écran, une seule fois. Rien si l'utilisateur limite les animations. */
 export function Confetti({ pieces = 120 }: { pieces?: number }) {

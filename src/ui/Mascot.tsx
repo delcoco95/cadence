@@ -1,90 +1,82 @@
-import { useId, type CSSProperties, type ReactNode } from 'react';
-import { FlagShapes, JERSEYS, useLang } from './language';
+import type { CSSProperties, ReactNode } from 'react';
+import { FlagShapes, useLang } from './language';
 
 export type Mood = 'idle' | 'happy' | 'cheer' | 'sad' | 'think' | 'wow';
 
-/** Coco, l'oiseau mélomane de Cadence, en maillot du pays de la langue apprise. Dessin vectoriel, humeurs animées en CSS. */
+/**
+ * Coco, la bulle de parole de Cadence : elle écoute (casque) et parle (bulle). Dessin vectoriel plat,
+ * humeurs animées en CSS ; un petit badge rappelle la langue apprise.
+ */
 export function Mascot({ mood = 'idle', size = 96, style }: { mood?: Mood; size?: number; style?: CSSProperties }) {
   const lang = useLang();
-  const jersey = JERSEYS[lang];
-  // Identifiant unique : plusieurs Coco peuvent être affichés sur la même page.
-  const clip = `coco-clip-${useId().replace(/:/g, '')}`;
   const happyEyes = mood === 'happy' || mood === 'cheer';
-  const wingsUp = mood === 'cheer' || mood === 'wow';
   return (
     <svg className={`mascot mood-${mood}`} viewBox="0 0 120 120" width={size} height={size} style={style} aria-hidden="true">
-      <defs>
-        <radialGradient id="coco-body" cx="40%" cy="35%" r="70%">
-          <stop offset="0" stopColor="var(--mascot-light)" />
-          <stop offset="1" stopColor="var(--mascot)" />
-        </radialGradient>
-        <clipPath id={clip}>
-          <ellipse cx="60" cy="68" rx="40" ry="40" />
-        </clipPath>
-      </defs>
       <g className="mascot-body">
         {/* ombre au sol */}
-        <ellipse cx="60" cy="113" rx="28" ry="4" fill="currentColor" opacity=".08" className="mascot-shadow" />
-        {/* pattes */}
-        <path d="M50 104v6M70 104v6" stroke="var(--beak)" strokeWidth="4" strokeLinecap="round" />
-        {/* ailes */}
-        <g className="mascot-wing-l" style={{ transformOrigin: '24px 70px' }}>
-          <ellipse cx="22" cy={wingsUp ? 52 : 76} rx="9" ry="16" fill="var(--mascot)" transform={`rotate(${wingsUp ? 35 : 15} 22 ${wingsUp ? 52 : 76})`} />
-        </g>
-        <g className="mascot-wing-r" style={{ transformOrigin: '96px 70px' }}>
-          <ellipse cx="98" cy={wingsUp ? 52 : 76} rx="9" ry="16" fill="var(--mascot)" transform={`rotate(${wingsUp ? -35 : -15} 98 ${wingsUp ? 52 : 76})`} />
-        </g>
-        {/* corps */}
-        <ellipse cx="60" cy="68" rx="40" ry="40" fill="url(#coco-body)" />
-        <ellipse cx="60" cy="84" rx="25" ry="20" fill="var(--belly)" />
-        {/* maillot */}
-        <g clipPath={`url(#${clip})`} className="mascot-jersey">
-          <path d="M16 91Q60 80 104 91V112H16z" fill={jersey.shirt} />
-          <path d="M16 91Q60 80 104 91" fill="none" stroke={jersey.collar} strokeWidth="2.5" />
-          <path d="M52 85.5L60 93L68 85.5" fill="none" stroke={jersey.collar} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
-          <rect x="71.5" y="93.5" width="13" height="9.5" rx="1.6" fill="rgb(0 0 0 / .14)" />
-          <svg x="72" y="94" width="12" height="8.5" viewBox="0 0 12 8" preserveAspectRatio="none">
-            <FlagShapes lang={lang} x={0} y={0} w={12} />
-          </svg>
-        </g>
-        {/* houppette */}
-        <path d="M56 30c-3-8 0-14 6-16-1 5 1 9 4 12-3 0-7 1-10 4z" fill="var(--mascot)" />
+        <ellipse cx="60" cy="114" rx="26" ry="3.5" fill="currentColor" opacity=".08" className="mascot-shadow" />
+        {/* bulle de parole, pointe en bas à gauche */}
+        <path
+          d="M32 26H88A18 18 0 0 1 106 44V74A18 18 0 0 1 88 92H58L36 108L41 92H32A18 18 0 0 1 14 74V44A18 18 0 0 1 32 26Z"
+          fill="var(--mascot)"
+        />
+        {/* reflet discret */}
+        <path d="M30 34h22" stroke="var(--mascot-light)" strokeWidth="5" strokeLinecap="round" opacity=".8" />
         {/* casque */}
-        <path d="M24 60a36 36 0 0 1 72 0" fill="none" stroke="var(--phones)" strokeWidth="5" strokeLinecap="round" />
-        <rect x="16" y="54" width="12" height="20" rx="6" fill="var(--phones)" />
-        <rect x="92" y="54" width="12" height="20" rx="6" fill="var(--phones)" />
-        <rect x="19" y="58" width="6" height="12" rx="3" fill="var(--phones-light)" />
-        <rect x="95" y="58" width="6" height="12" rx="3" fill="var(--phones-light)" />
+        <path d="M12 60A48 44 0 0 1 108 60" fill="none" stroke="var(--phones)" strokeWidth="5" strokeLinecap="round" />
+        <rect x="5" y="50" width="13" height="22" rx="6.5" fill="var(--phones)" />
+        <rect x="102" y="50" width="13" height="22" rx="6.5" fill="var(--phones)" />
+        <rect x="8.5" y="55" width="6" height="12" rx="3" fill="var(--phones-light)" />
+        <rect x="105.5" y="55" width="6" height="12" rx="3" fill="var(--phones-light)" />
         {/* joues */}
-        <ellipse cx="38" cy="74" rx="6" ry="4" fill="var(--cheek)" opacity=".7" />
-        <ellipse cx="82" cy="74" rx="6" ry="4" fill="var(--cheek)" opacity=".7" />
+        <ellipse cx="34" cy="70" rx="6" ry="3.8" fill="var(--cheek)" opacity=".75" />
+        <ellipse cx="86" cy="70" rx="6" ry="3.8" fill="var(--cheek)" opacity=".75" />
         {/* yeux */}
         {happyEyes ? (
-          <g stroke="var(--eye)" strokeWidth="4.5" strokeLinecap="round" fill="none">
-            <path d="M39 60q7-9 14 0" />
-            <path d="M67 60q7-9 14 0" />
+          <g stroke="var(--mascot-ink)" strokeWidth="4.5" strokeLinecap="round" fill="none">
+            <path d="M39 58q7-9 14 0" />
+            <path d="M67 58q7-9 14 0" />
           </g>
         ) : (
           <g className="mascot-eyes">
-            <circle cx="46" cy="58" r={mood === 'wow' ? 13 : 11.5} fill="#fff" />
-            <circle cx="74" cy="58" r={mood === 'wow' ? 13 : 11.5} fill="#fff" />
+            <circle cx="46" cy="56" r={mood === 'wow' ? 12 : 10.5} fill="#fff" />
+            <circle cx="74" cy="56" r={mood === 'wow' ? 12 : 10.5} fill="#fff" />
             <Pupils mood={mood} />
           </g>
         )}
         {mood === 'sad' && (
-          <g stroke="var(--eye)" strokeWidth="3" strokeLinecap="round">
-            <path d="M36 44l12 4M84 44l-12 4" />
+          <g stroke="var(--mascot-ink)" strokeWidth="3" strokeLinecap="round">
+            <path d="M36 42l12 4M84 42l-12 4" />
           </g>
         )}
-        {/* bec */}
+        {/* bouche */}
         {mood === 'wow' ? (
-          <ellipse cx="60" cy="76" rx="6" ry="7" fill="var(--beak-dark)" />
+          <ellipse cx="60" cy="75" rx="5.5" ry="6.5" fill="var(--mascot-ink)" />
+        ) : mood === 'sad' ? (
+          <path d="M52 78q8-6 16 0" fill="none" stroke="var(--mascot-ink)" strokeWidth="4" strokeLinecap="round" />
         ) : happyEyes ? (
-          <path d="M51 71h18q-2 9-9 9t-9-9z" fill="var(--beak)" />
+          <path d="M50 70h20q-2 10-10 10t-10-10z" fill="var(--mascot-ink)" />
         ) : (
-          <path d="M54 70h12l-6 8z" fill="var(--beak)" />
+          <path d="M52 72q8 7 16 0" fill="none" stroke="var(--mascot-ink)" strokeWidth="4" strokeLinecap="round" />
         )}
-        {mood === 'think' && <circle cx="99" cy="30" r="5" fill="var(--mascot-light)" opacity=".7" className="mascot-bubble" />}
+        {/* badge de la langue apprise */}
+        <rect x="83" y="78" width="16" height="11.5" rx="2.5" fill="var(--mascot-ink)" opacity=".18" />
+        <svg x="84" y="79" width="14" height="9.5" viewBox="0 0 12 8" preserveAspectRatio="none">
+          <FlagShapes lang={lang} x={0} y={0} w={12} />
+        </svg>
+        {/* réflexion : petites bulles */}
+        {mood === 'think' && (
+          <g className="mascot-bubble" fill="var(--mascot-light)">
+            <circle cx="104" cy="22" r="5" />
+            <circle cx="113" cy="12" r="3" />
+          </g>
+        )}
+        {/* joie : éclats */}
+        {mood === 'cheer' && (
+          <g stroke="var(--sun)" strokeWidth="3.5" strokeLinecap="round" className="mascot-bubble">
+            <path d="M18 18l5 5M10 34h7M102 18l-5 5M110 34h-7" />
+          </g>
+        )}
       </g>
     </svg>
   );
@@ -95,15 +87,15 @@ function Pupils({ mood }: { mood: Mood }) {
   const dy = mood === 'sad' ? 3 : mood === 'think' ? -3 : 1;
   return (
     <g className="mascot-pupils">
-      <circle cx={46 + dx} cy={58 + dy} r="6" fill="var(--eye)" />
-      <circle cx={74 + dx} cy={58 + dy} r="6" fill="var(--eye)" />
-      <circle cx={48 + dx} cy={55 + dy} r="2" fill="#fff" />
-      <circle cx={76 + dx} cy={55 + dy} r="2" fill="#fff" />
+      <circle cx={46 + dx} cy={56 + dy} r="5.5" fill="var(--mascot-ink)" />
+      <circle cx={74 + dx} cy={56 + dy} r="5.5" fill="var(--mascot-ink)" />
+      <circle cx={48 + dx} cy={53 + dy} r="1.8" fill="#fff" />
+      <circle cx={76 + dx} cy={53 + dy} r="1.8" fill="#fff" />
     </g>
   );
 }
 
-/** Coco qui parle : mascotte + bulle. */
+/** Coco qui parle : mascotte + bulle de texte. */
 export function MascotSays({
   mood = 'happy',
   size = 84,

@@ -88,7 +88,7 @@ export function UnitStepPlayer() {
       <section className="cta-card" style={{ gap: 10 }}>
         <p className="tiny">{unitLabel(unitId)} · {unit.title}</p>
         <div className="row">
-          <span className="icon-tile" style={{ background: 'rgb(255 255 255 / .2)', color: '#fff' }}>
+          <span className="icon-tile" style={{ background: 'rgb(0 0 0 / .12)', color: 'var(--on-fill)' }}>
             {isChallenge ? <TrophyIcon /> : <DumbbellIcon />}
           </span>
           <h1 style={{ fontSize: 27 }}>{isChallenge ? (jump ? 'Sauter jusqu’ici' : 'Défi de l’unité') : 'Entraînement'}</h1>

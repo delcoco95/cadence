@@ -119,7 +119,7 @@ export function Home() {
             </div>
           ) : (
             <div className="row">
-              <span className="icon-tile" style={{ background: 'rgb(255 255 255 / .2)', color: '#fff' }}>
+              <span className="icon-tile" style={{ background: 'rgb(0 0 0 / .12)', color: 'var(--on-fill)' }}>
                 {step.kind === 'challenge' ? <TrophyIcon /> : <DumbbellIcon />}
               </span>
               <div className="stack grow" style={{ gap: 2 }}>

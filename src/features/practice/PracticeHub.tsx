@@ -27,7 +27,7 @@ export function PracticeHub() {
 
       <Link to="/practice/all" className="cta-card" style={{ textDecoration: 'none' }}>
         <div className="row">
-          <span className="icon-tile" style={{ background: 'rgb(255 255 255 / .2)', color: '#fff' }}><RefreshIcon /></span>
+          <span className="icon-tile" style={{ background: 'rgb(0 0 0 / .12)', color: 'var(--on-fill)' }}><RefreshIcon /></span>
           <div className="grow">
             <h2 style={{ fontSize: 21 }}>Séance du jour</h2>
             <p className="small">Révisions espacées, nouveaux mots, points faibles</p>

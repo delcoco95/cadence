@@ -106,9 +106,9 @@ export function LessonPlayer() {
         <h1 style={{ fontSize: 28 }}>{lesson.title}</h1>
         <p>{lesson.subtitle}</p>
         <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
-          <span className="chip" style={{ background: 'rgb(255 255 255 / .22)', color: '#fff' }}><SparkleIcon />{items.length} exercices</span>
+          <span className="chip" style={{ background: 'rgb(0 0 0 / .12)', color: 'var(--on-fill)' }}><SparkleIcon />{items.length} exercices</span>
           {speakCount > 0 && settings?.speakingEnabled !== false && (
-            <span className="chip" style={{ background: 'rgb(255 255 255 / .22)', color: '#fff' }}><MicIcon />{speakCount} à l’oral</span>
+            <span className="chip" style={{ background: 'rgb(0 0 0 / .12)', color: 'var(--on-fill)' }}><MicIcon />{speakCount} à l’oral</span>
           )}
         </div>
       </section>
