@@ -1,8 +1,11 @@
 name: Deploy to GitHub Pages
 on:
   push:
-    branches: [main]
+    branches: [main, theme-portfolio]
   workflow_dispatch:
+env:
+  # Branche publiée en aperçu dans /preview/ (l'app principale reste celle de main)
+  PREVIEW_BRANCH: theme-portfolio
 permissions:
   contents: read
   pages: write
@@ -15,6 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -23,6 +28,22 @@ jobs:
       - run: npm test
       - run: npm run validate-content
       - run: npm run build
+      - name: Aperçu de la branche dans /preview/
+        run: |
+          if git ls-remote --exit-code --heads origin "$PREVIEW_BRANCH" > /dev/null; then
+            git fetch --depth 1 origin "$PREVIEW_BRANCH"
+            git worktree add ../preview FETCH_HEAD
+            cd ../preview
+            npm ci
+            npx vitest run
+            # Les voix (555 Mo) ne sont pas recopiées : l'aperçu lit celles de l'app principale.
+            VITE_AUDIO_BASE=../audio/ npm run build
+            rm -rf dist/audio
+            mkdir -p "$GITHUB_WORKSPACE/dist/preview"
+            cp -r dist/. "$GITHUB_WORKSPACE/dist/preview/"
+          else
+            echo "Pas de branche $PREVIEW_BRANCH : pas d'aperçu."
+          fi
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

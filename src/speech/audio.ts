@@ -52,7 +52,8 @@ export const speechLocale = (lang: Lang, englishAccent: 'en-US' | 'en-GB'): Cade
 /** Phrase d'écoute du choix de voix (incluse dans le corpus généré). */
 export const voiceSample = (accent: CadenceAccent) => LANGUAGES[accent === 'it-IT' ? 'it' : accent === 'es-ES' ? 'es' : 'en'].voiceSample;
 
-const BASE = 'audio/';
+// Dossier des voix ; l'aperçu d'une branche (/preview/) réutilise celles de l'app principale (../audio/).
+const BASE: string = import.meta.env.VITE_AUDIO_BASE ?? 'audio/';
 /** Clés disponibles par voix (manifeste v2) ; v1 listait les clés communes à toutes les voix. */
 let available: Map<string, Set<string>> | null = null;
 const manifest: Promise<Map<string, Set<string>>> =

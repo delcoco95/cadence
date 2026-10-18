@@ -29,6 +29,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,json,woff2}'],
+        // L'aperçu d'une branche, publié dans /preview/, a sa propre app : ne pas lui servir celle-ci.
+        navigateFallbackDenylist: [/\/preview\//],
         // Les voix (plusieurs milliers de MP3) ne sont pas préchargées : chaque fichier est mis en cache
         // à sa première écoute, ou en une fois depuis le profil (« Télécharger la voix »).
         runtimeCaching: [
