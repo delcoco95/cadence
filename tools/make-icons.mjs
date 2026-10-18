@@ -1,11 +1,11 @@
 // Génère les icônes PNG de la PWA sans dépendance (encodeur PNG minimal + zlib).
-// Motif : carré sombre, arc "C" clair (cadence) et point ambre (la série).
+// Motif : carré violet (couleur principale de l’app), arc "C" blanc (cadence) et point soleil (l’XP, la série).
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { deflateSync } from 'node:zlib';
 
-const BG = [14, 16, 20];
-const FG = [236, 238, 242];
-const ACCENT = [245, 166, 35];
+const BG = [108, 77, 246];
+const FG = [255, 255, 255];
+const ACCENT = [255, 176, 32];
 
 function crc32(buf) {
   let c, crc = 0xffffffff;
@@ -75,6 +75,6 @@ for (const [name, size] of [['apple-touch-icon.png', 180], ['icon-192.png', 192]
 }
 writeFileSync(
   'public/icons/favicon.svg',
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#0e1014"/><path d="M68.4 34.3A24.5 24.5 0 1 0 68.4 65.7" fill="none" stroke="#eceef2" stroke-width="9"/><circle cx="74.5" cy="50" r="5.5" fill="#f5a623"/></svg>`,
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#6c4df6"/><path d="M68.4 34.3A24.5 24.5 0 1 0 68.4 65.7" fill="none" stroke="#ffffff" stroke-width="9"/><circle cx="74.5" cy="50" r="5.5" fill="#ffb020"/></svg>`,
 );
 console.log('icons ok');
