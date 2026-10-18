@@ -31,6 +31,10 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,json,woff2}'],
         // L'aperçu d'une branche, publié dans /preview/, a sa propre app : ne pas lui servir celle-ci.
         navigateFallbackDenylist: [/\/preview\//],
+        // Une nouvelle version prend la main tout de suite, SANS recharger la page (pas de leçon coupée) :
+        // une version en attente ne pourrait jamais remplacer une ancienne restée bloquée (page blanche de /preview/).
+        skipWaiting: true,
+        clientsClaim: true,
         // Les voix (plusieurs milliers de MP3) ne sont pas préchargées : chaque fichier est mis en cache
         // à sa première écoute, ou en une fois depuis le profil (« Télécharger la voix »).
         runtimeCaching: [
