@@ -1,7 +1,9 @@
 name: Deploy to GitHub Pages
 on:
   push:
-    branches: [main, theme-portfolio]
+    branches: [main]
+  # Pour rafraîchir l'aperçu après un push sur la branche : gh workflow run deploy.yml --ref main
+  # (seule main a le droit de publier sur GitHub Pages ; son déploiement récupère la branche d'aperçu)
   workflow_dispatch:
 env:
   # Branche publiée en aperçu dans /preview/ (l'app principale reste celle de main)
