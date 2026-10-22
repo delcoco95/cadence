@@ -3,6 +3,7 @@
  * Sur iPhone, elle s'appuie sur la reconnaissance d'Apple ; elle peut être indisponible
  * (réglages, mode Web App, pas de réseau) : l'interface propose alors la dictée du clavier.
  */
+import { resetPlayer } from './audio';
 
 interface RecognitionResultList {
   length: number;
@@ -32,6 +33,17 @@ function ctor(): RecognitionCtor | undefined {
 
 export const sttSupported = () => typeof window !== 'undefined' && !!ctor();
 
+/**
+ * Safari (16.4+) bascule la sortie audio en mode « appel » pendant le micro : le son passe dans l'écouteur,
+ * presque inaudible, et y reste après l'écoute. On demande le mode enregistrement seulement pendant l'écoute,
+ * puis on rend la main à la lecture.
+ */
+type AudioSessionNav = Navigator & { audioSession?: { type: string } };
+function setAudioSession(type: 'play-and-record' | 'playback'): void {
+  const session = (navigator as AudioSessionNav).audioSession;
+  if (session) session.type = type;
+}
+
 export interface ListenHandlers {
   /** Transcription complète à ce stade (résultats finaux + provisoires) */
   onText: (text: string) => void;
@@ -54,6 +66,11 @@ export function startListening(lang: string, h: ListenHandlers): Listening | nul
   rec.interimResults = true;
   rec.maxAlternatives = 1;
   let text = '';
+  setAudioSession('play-and-record');
+  const release = () => {
+    setAudioSession('playback');
+    resetPlayer();
+  };
   rec.onresult = (e) => {
     const parts: string[] = [];
     for (let i = 0; i < e.results.length; i++) parts.push(e.results[i][0].transcript);
@@ -61,10 +78,14 @@ export function startListening(lang: string, h: ListenHandlers): Listening | nul
     h.onText(text);
   };
   rec.onerror = (e) => h.onError(e.error);
-  rec.onend = () => h.onEnd(text);
+  rec.onend = () => {
+    release();
+    h.onEnd(text);
+  };
   try {
     rec.start();
   } catch {
+    release();
     h.onError('start-failed');
     return null;
   }
@@ -77,6 +98,7 @@ export function startListening(lang: string, h: ListenHandlers): Listening | nul
       rec.onerror = null;
       rec.onend = null;
       rec.abort();
+      release();
     },
   };
 }

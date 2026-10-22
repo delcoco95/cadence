@@ -15958,5 +15958,425 @@
  {
   "key": "20966832",
   "text": "sugerir, sugiero, sugerido"
+ },
+ {
+  "key": "2e23f84b",
+  "text": "Son cinco euros con veinte. ¡Gracias, guapo, hasta luego!"
+ },
+ {
+  "key": "4cedbf58",
+  "text": "Una caña, por favor."
+ },
+ {
+  "key": "bbe78fe3",
+  "text": "Una tapa de croquetas."
+ },
+ {
+  "key": "f98a1a6c",
+  "text": "¿Me cobras, por favor?"
+ },
+ {
+  "key": "b21a2378",
+  "text": "¡Buenas! ¿Qué te pongo?"
+ },
+ {
+  "key": "95754b8b",
+  "text": "Perdona, ¿qué quieres beber?"
+ },
+ {
+  "key": "af4df249",
+  "text": "Marchando. ¿Y para picar? Hoy tenemos salmorejo, croquetas y espinacas con garbanzos."
+ },
+ {
+  "key": "8190f5a7",
+  "text": "Perdona, ¿qué tapa te pongo?"
+ },
+ {
+  "key": "3810e28e",
+  "text": "Una tapa de croquetas, por favor."
+ },
+ {
+  "key": "593bc907",
+  "text": "Aquí tienes. ¿Algo más?"
+ },
+ {
+  "key": "6e2df2b2",
+  "text": "¿Perdona? ¿Quieres algo más?"
+ },
+ {
+  "key": "5f3d03bd",
+  "text": "No, gracias. ¿Me cobras, por favor?"
+ },
+ {
+  "key": "6ee177b6",
+  "text": "¡Marchando otra! ¿Te cobro ya?"
+ },
+ {
+  "key": "528c77ee",
+  "text": "¿Perdona?"
+ },
+ {
+  "key": "702ee6ce",
+  "text": "Sí, por favor. ¿Cuánto es?"
+ },
+ {
+  "key": "a7804ad6",
+  "text": "¡Genial! Pues bienvenido a casa. El domingo, paella para todos."
+ },
+ {
+  "key": "d474f601",
+  "text": "Me llamo Thomas, encantado."
+ },
+ {
+  "key": "fd88f63c",
+  "text": "Soy de Francia, de Lyon."
+ },
+ {
+  "key": "277878c2",
+  "text": "Estudio en la universidad."
+ },
+ {
+  "key": "8cb3a375",
+  "text": "¡Me encanta!"
+ },
+ {
+  "key": "077559c6",
+  "text": "¡Hola! Bienvenido a casa. ¿Cómo te llamas?"
+ },
+ {
+  "key": "4d7fcda9",
+  "text": "Perdona, ¿cómo has dicho que te llamas?"
+ },
+ {
+  "key": "b1c09365",
+  "text": "Hola, me llamo Thomas. Encantado."
+ },
+ {
+  "key": "76197bb9",
+  "text": "Encantada. Yo soy Itziar. ¿Y de dónde eres?"
+ },
+ {
+  "key": "cf82e078",
+  "text": "¿Perdona? ¿De qué país eres?"
+ },
+ {
+  "key": "81969c42",
+  "text": "¡Qué bien! Yo soy de Bilbao. ¿Y qué haces aquí en Madrid? ¿Estudias o trabajas?"
+ },
+ {
+  "key": "a3ae68a9",
+  "text": "¿Perdona? ¿Estudias o trabajas?"
+ },
+ {
+  "key": "047694dc",
+  "text": "Estudio en la universidad, hago un Erasmus."
+ },
+ {
+  "key": "72db6fa6",
+  "text": "¡Ah, mira! Entonces nos vemos por las noches. Oye, los domingos cocino paella para todos. ¿Te gusta la paella?"
+ },
+ {
+  "key": "320de812",
+  "text": "Oye, los domingos cocino paella para todos. ¿Te gusta la paella?"
+ },
+ {
+  "key": "e81ca270",
+  "text": "¿Sí o no? ¿Te gusta?"
+ },
+ {
+  "key": "ca31fd1d",
+  "text": "¡Sí, me encanta! Gracias."
+ },
+ {
+  "key": "bfdc8858",
+  "text": "Gracias, ya está mucho mejor. ¡Venga, a trabajar!"
+ },
+ {
+  "key": "38c574d6",
+  "text": "Fui a Toledo con unos amigos."
+ },
+ {
+  "key": "ff197b25",
+  "text": "Visitamos la catedral y comimos mazapán."
+ },
+ {
+  "key": "9777b94e",
+  "text": "Hacía sol, pero un poco de frío."
+ },
+ {
+  "key": "f63d7fa7",
+  "text": "¡Vaya, lo siento!"
+ },
+ {
+  "key": "2c271009",
+  "text": "¡Buenos días! ¿Qué tal el finde? ¿Hiciste algo especial?"
+ },
+ {
+  "key": "88e5b98a",
+  "text": "¿Y entonces? ¿Adónde fuiste?"
+ },
+ {
+  "key": "0558b84a",
+  "text": "Sí, fui a Toledo con unos amigos."
+ },
+ {
+  "key": "c62e5858",
+  "text": "¡Anda! ¿Y qué tal? ¿Qué hicisteis allí?"
+ },
+ {
+  "key": "02404cf1",
+  "text": "¿Cómo? Cuéntame, ¿qué hicisteis?"
+ },
+ {
+  "key": "9648c70b",
+  "text": "¡Qué envidia! ¿Y tuvisteis buen tiempo?"
+ },
+ {
+  "key": "d4399af9",
+  "text": "¿Perdona? ¿Qué tiempo hizo?"
+ },
+ {
+  "key": "c9be533b",
+  "text": "Yo me quedé en casa porque mi hijo estaba malo."
+ },
+ {
+  "key": "3e38bfdb",
+  "text": "Sí, pobrecito… pero bueno."
+ },
+ {
+  "key": "dcd67ef3",
+  "text": "¡Vaya, lo siento! ¿Ya está mejor?"
+ },
+ {
+  "key": "8cb85ec3",
+  "text": "Aquí tiene su billete. Sale de la vía cinco. ¡Buen viaje!"
+ },
+ {
+  "key": "eb1c5a6d",
+  "text": "Un billete para Barcelona, por favor."
+ },
+ {
+  "key": "2789d457",
+  "text": "Ida y vuelta."
+ },
+ {
+  "key": "39dd6ab2",
+  "text": "El de las diez y cuarto."
+ },
+ {
+  "key": "434ba10a",
+  "text": "Ventanilla, por favor."
+ },
+ {
+  "key": "31748ae0",
+  "text": "Buenas tardes, ¿adónde viaja?"
+ },
+ {
+  "key": "e4a9c45b",
+  "text": "Perdone, ¿para qué ciudad?"
+ },
+ {
+  "key": "845bc02a",
+  "text": "Buenas tardes, un billete para Barcelona, por favor."
+ },
+ {
+  "key": "585b815b",
+  "text": "¿Solo ida o ida y vuelta?"
+ },
+ {
+  "key": "92bf394e",
+  "text": "Perdone: ¿solo ida, o ida y vuelta?"
+ },
+ {
+  "key": "49b592df",
+  "text": "Solo ida, por favor."
+ },
+ {
+  "key": "2914fb1d",
+  "text": "¿Y para qué día la vuelta?"
+ },
+ {
+  "key": "cf38e964",
+  "text": "¿Perdone? ¿Qué día vuelve?"
+ },
+ {
+  "key": "dde4038b",
+  "text": "Para el domingo por la tarde."
+ },
+ {
+  "key": "1e9aa89e",
+  "text": "Hay un tren a las diez y cuarto y otro a las doce y media. ¿Cuál prefiere?"
+ },
+ {
+  "key": "71f868e2",
+  "text": "Perdone, ¿el de las diez o el de las doce?"
+ },
+ {
+  "key": "05dd2ca5",
+  "text": "El de las diez y cuarto, por favor."
+ },
+ {
+  "key": "a57cb646",
+  "text": "Perfecto. ¿Ventanilla o pasillo?"
+ },
+ {
+  "key": "1b897951",
+  "text": "¿Perdone? ¿Ventanilla o pasillo?"
+ },
+ {
+  "key": "fd761f23",
+  "text": "Muy bien, queda anotado. El técnico le llamará media hora antes. ¡Que tenga un buen día!"
+ },
+ {
+  "key": "69b1560a",
+  "text": "No tengo internet desde ayer."
+ },
+ {
+  "key": "95d7f00b",
+  "text": "Ya lo había reiniciado antes de llamar."
+ },
+ {
+  "key": "efcab7d9",
+  "text": "La luz está roja y parpadea."
+ },
+ {
+  "key": "8bc04c24",
+  "text": "¿Podría venir mañana por la mañana?"
+ },
+ {
+  "key": "24f435d0",
+  "text": "Servicio técnico, le atiende Nerea. ¿En qué puedo ayudarle?"
+ },
+ {
+  "key": "4572051d",
+  "text": "Perdone, ¿cuál es el problema exactamente?"
+ },
+ {
+  "key": "64c4e356",
+  "text": "No tengo internet desde ayer por la tarde."
+ },
+ {
+  "key": "78e1250f",
+  "text": "Hola, buenos días. No tengo internet desde ayer por la tarde."
+ },
+ {
+  "key": "730526f8",
+  "text": "Vaya, lo siento. ¿Ha probado ya a reiniciar el router?"
+ },
+ {
+  "key": "5a682eb7",
+  "text": "¿Perdone? ¿Lo ha reiniciado o no?"
+ },
+ {
+  "key": "b7d14f15",
+  "text": "Sí, ya lo había reiniciado antes de llamar, pero sigue sin funcionar."
+ },
+ {
+  "key": "68f2bb7d",
+  "text": "De acuerdo. Mire las luces del aparato, por favor. ¿De qué color está la de internet?"
+ },
+ {
+  "key": "d040be5f",
+  "text": "Perdone, ¿qué color ve?"
+ },
+ {
+  "key": "76915053",
+  "text": "Está roja y parpadea."
+ },
+ {
+  "key": "4a5ecfe2",
+  "text": "Entonces es una avería en la línea. Tiene que ir un técnico a su domicilio. ¿Cuándo le vendría bien?"
+ },
+ {
+  "key": "df27e95c",
+  "text": "Dígame un día y una franja horaria."
+ },
+ {
+  "key": "0b96c44f",
+  "text": "¿Podría venir mañana por la mañana? Por la tarde trabajo."
+ },
+ {
+  "key": "e8caa080",
+  "text": "Estupendo, me apunto su nombre. ¡Hasta entonces!"
+ },
+ {
+  "key": "ba7f5220",
+  "text": "Le llamo por el anuncio del piso."
+ },
+ {
+  "key": "0e566dd3",
+  "text": "¿Podría decirme si los gastos están incluidos?"
+ },
+ {
+  "key": "8e0db5c2",
+  "text": "¿Sería posible ver el piso esta semana?"
+ },
+ {
+  "key": "9891801a",
+  "text": "El jueves no puedo, ¿podría ser el viernes?"
+ },
+ {
+  "key": "6003fd54",
+  "text": "¿Dígame?"
+ },
+ {
+  "key": "8d28d9ed",
+  "text": "¿Sí? ¿Quién es?"
+ },
+ {
+  "key": "1d8afbaf",
+  "text": "Hola, buenas tardes. Le llamo por el anuncio del piso."
+ },
+ {
+  "key": "b9c94a7f",
+  "text": "Hola, buenas tardes. Le llamo por el anuncio del piso en Lavapiés."
+ },
+ {
+  "key": "f90bd8c2",
+  "text": "Ah, sí. Todavía está libre. ¿Qué quería saber?"
+ },
+ {
+  "key": "3f224359",
+  "text": "Perdone, no le he entendido bien."
+ },
+ {
+  "key": "ef1ed549",
+  "text": "¿Podría decirme cuánto cuesta al mes y si los gastos están incluidos?"
+ },
+ {
+  "key": "6302a10d",
+  "text": "Son ochocientos cincuenta euros al mes, con la comunidad incluida. La luz y el agua van aparte, y pido dos meses de fianza."
+ },
+ {
+  "key": "5b3d1d56",
+  "text": "Sí, dígame…"
+ },
+ {
+  "key": "f7fabcfa",
+  "text": "Vale. ¿Sería posible ver el piso esta semana?"
+ },
+ {
+  "key": "b9555d1b",
+  "text": "Claro. Si le viene bien, podemos quedar el jueves a las siete."
+ },
+ {
+  "key": "18daba1d",
+  "text": "¿Le va bien el jueves, entonces?"
+ },
+ {
+  "key": "9e49a673",
+  "text": "Perfecto, el jueves a las siete allí estaré."
+ },
+ {
+  "key": "1e4d009d",
+  "text": "Pues entonces el viernes por la tarde, a la hora que usted diga."
+ },
+ {
+  "key": "56a14704",
+  "text": "Perdone, ¿a qué hora le viene bien?"
+ },
+ {
+  "key": "eacd218f",
+  "text": "¿Le parece bien a las seis?"
  }
 ]

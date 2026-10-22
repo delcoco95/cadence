@@ -158,6 +158,18 @@ export async function playClip(text: string, accent: CadenceAccent, gender: Cade
   }
 }
 
+/**
+ * Après le micro, l'élément audio peut rester rattaché à l'ancienne sortie et ne plus rien jouer :
+ * on le vide pour que le prochain clip reparte sur la sortie normale, sans perdre le déblocage iOS.
+ */
+export function resetPlayer(): void {
+  generation++;
+  if (!player) return;
+  player.pause();
+  player.removeAttribute('src');
+  player.load();
+}
+
 export function stopClip(): void {
   generation++;
   player?.pause();
